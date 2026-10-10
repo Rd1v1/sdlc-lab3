@@ -28,3 +28,9 @@ powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
 ```
 
 CSV/JSON и анализ создаются в указанном каталоге `artifacts`. Для установки portable hashcat выполните `powershell -ExecutionPolicy Bypass -File scripts/setup-tools.ps1`. Для сравнения используйте `--hashcat --hashcat-path .tools/hashcat/hashcat-7.1.2/hashcat.exe` у benchmark. При отсутствии hashcat результат отмечается как недоступный.
+
+Сводная таблица фактических скоростей находится в [REPORT.md](REPORT.md). Повторить сравнение с тремя замерами:
+
+```powershell
+.venv/Scripts/python.exe -m lab3.src.benchmark --smoke --repeats 3 --backend threads --workers 1 --hashcat --hashcat-path .tools/hashcat/hashcat-7.1.2/hashcat.exe --output artifacts/hashcat-summary
+```

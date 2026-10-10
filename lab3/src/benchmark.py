@@ -63,7 +63,9 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, bac
             if include_hashcat and scenario in ('base', 'length2'):
                 for repeat in range(1, repeats + 1):
                     measured = compare_hashcat(target, CrackConfig(alphabet, length, length), executable)
-                    professional.append(dict(scenario=scenario, algorithm=algorithm, repeat=repeat, **measured))
+                    professional.append(dict(scenario=scenario, algorithm=algorithm, repeat=repeat,
+                                             target_hash=target.encoded, total_search_space=len(alphabet) ** length,
+                                             alphabet=alphabet, password_length=length, **measured))
             print(f'{scenario}: {algorithm} complete', file=sys.stderr, flush=True)
     if not smoke:
         for algorithm in ('md5', 'sha1'):
@@ -84,6 +86,45 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, bac
     return dict(created_utc=datetime.now(timezone.utc).isoformat(), python=sys.version,
                 platform=platform.platform(), processor=platform.processor(), logical_processors=os.cpu_count(),
                 repeats=repeats, backend=backend, results=rows, professional=professional)
+
+
+def speed_summary(report):
+    """Compare matching tasks; hashcat N/t is task throughput, not device H/s."""
+    lines = ['', '## Сводная таблица скорости: собственный код и hashcat', '',
+             'Сценарий base: алфавит abc, длина 1, пароль c, 3 кандидата. '
+             'В таблице медианы повторов; собственный код использует минимальное число воркеров из этого отчёта. '
+             'Время собственного кода включает создание и завершение воркеров; '
+             'время hashcat включает запуск, инициализацию устройства и выполнение поиска. '
+             'Скорость собственного кода — фактические проверки / время. '
+             'Эффективная скорость задания hashcat — бюджет кандидатов N / полное время; '
+             'число реально обработанных GPU кандидатов отдельно не измерялось.', '',
+             '| Алгоритм | Код: режим / воркеры | Повторы код / hashcat | Код, с | Код, проверок/с | Hashcat, с | Hashcat, N/с по wall time |',
+             '| --- | --- | --- | ---: | ---: | ---: | ---: |']
+    for algorithm in ('md5', 'sha1', 'bcrypt', 'argon2id'):
+        own = [row for row in report['results'] if row['scenario'] == 'base' and row['algorithm'] == algorithm]
+        if not own:
+            continue
+        workers = min(row['workers'] for row in own)
+        own = [row for row in own if row['workers'] == workers]
+        total = own[0]['total_search_space']
+        target = own[0]['target_hash']
+        external = [row for row in report.get('professional', [])
+                    if row['scenario'] == 'base' and row['algorithm'] == algorithm
+                    and row.get('supported') and row.get('cracked')
+                    and row.get('elapsed_seconds', 0) > 0
+                    and row.get('target_hash', target) == target
+                    and row.get('total_search_space', total) == total]
+        own_seconds = statistics.median(row['elapsed_seconds'] for row in own)
+        own_rate = statistics.median(row['attempts_per_second'] for row in own)
+        seconds = f"{statistics.median(row['elapsed_seconds'] for row in external):.6f}" if external else 'н/д'
+        rate = f"{statistics.median(total / row['elapsed_seconds'] for row in external):.3f}" if external else 'н/д'
+        lines.append(f"| {algorithm} | {report.get('backend', 'threads')} / {workers} | {len(own)} / {len(external)} | "
+                     f"{own_seconds:.9f} | {own_rate:.2f} | {seconds} | {rate} |")
+    lines += ['', 'bcrypt: cost=10. Argon2id: m=65536 KiB, t=3, p=2. '
+              'Сравниваются одинаковые учебные хэши и наборы кандидатов. '
+              'На трёх кандидатах доминируют накладные расходы: таблица не доказывает, '
+              'что Python быстрее GPU на большом переборе. н/д означает отсутствие успешного сопоставимого замера.', '']
+    return lines
 
 
 def save(report, output):
@@ -129,7 +170,10 @@ def save(report, output):
               '## Сравнение с hashcat', '',
               'Одинаковый полный набор кандидатов передаётся как wordlist. Внешнее время включает запуск процесса, '
               'инициализацию устройства и компиляцию kernels; оно не равно чистой GPU throughput. '
-              'Нулевые/отсутствующие измерения не заменяются выдуманными числами.', '',
+              'Нулевые/отсутствующие измерения не заменяются выдуманными числами.']
+    lines += speed_summary(report)
+    # Detailed external runs are retained for reproducibility below the summary.
+    lines += ['', '### Отдельные прогоны hashcat', '',
               '| Scenario | Algorithm | Run | Supported | Cracked | Wall seconds |',
               '| --- | --- | ---: | --- | --- | ---: |']
     for r in report['professional']:
@@ -137,21 +181,6 @@ def save(report, output):
                      f"{r.get('cracked', False)} | {r.get('elapsed_seconds')} |")
     if not report['professional']:
         lines.append('Профессиональное сравнение в этом запуске не выполнялось.')
-    if report['professional']:
-        lines += ['', 'Медианы сравнения (собственный поиск workers=1; wall time внешнего процесса):', '',
-                  '| Algorithm | Own seconds | Hashcat seconds | Hashcat / own |',
-                  '| --- | ---: | ---: | ---: |']
-        for algorithm in ('md5', 'sha1', 'bcrypt', 'argon2id'):
-            own = [r['elapsed_seconds'] for r in report.get('professional_own', report['results'])
-                   if r['scenario'] == 'base' and r['algorithm'] == algorithm and r['workers'] == 1]
-            external = [r['elapsed_seconds'] for r in report['professional']
-                        if r['scenario'] == 'base' and r['algorithm'] == algorithm and r.get('cracked')]
-            if own and external:
-                a, b = statistics.median(own), statistics.median(external)
-                lines.append(f'| {algorithm} | {a:.9f} | {b:.6f} | {b/a:.2f} |')
-        lines += ['', 'На трёх кандидатах запуск hashcat дороже самого поиска: это накладные расходы '
-                  'инициализации/компиляции, а не доказательство превосходства Python над GPU. '
-                  'Первый холодный и последующие прогоны сохранены отдельно.']
     lines += ['', '## Ограничения эксперимента', '',
               'Это ограниченный CPU/Python эксперимент, не оценка стойкости реальных учётных записей. '
               'Windows power policy, фоновые процессы, GIL и KDF internal threads влияют на результат. '

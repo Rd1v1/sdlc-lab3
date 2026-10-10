@@ -1,0 +1,13 @@
+scenario,algorithm,alphabet,alphabet_size,password_length,expected_password,target_hash,total_search_space,workers,backend,repeat,elapsed_seconds,attempts,attempts_per_second
+base,md5,abc,3,1,c,4a8a08f09d37b73795649038408b5f33,3,1,threads,1,0.0010746000043582171,3,2791.736448755822
+base,md5,abc,3,1,c,4a8a08f09d37b73795649038408b5f33,3,1,threads,2,0.0003023000026587397,3,9923.916551819018
+base,md5,abc,3,1,c,4a8a08f09d37b73795649038408b5f33,3,1,threads,3,0.0002651000104378909,3,11316.483899961433
+base,sha1,abc,3,1,c,84a516841ba77a5b4648de2cd0dfcb30ea46dbb4,3,1,threads,1,0.0005660000024363399,3,5300.3533340751555
+base,sha1,abc,3,1,c,84a516841ba77a5b4648de2cd0dfcb30ea46dbb4,3,1,threads,2,0.0004915999888908118,3,6102.522513820323
+base,sha1,abc,3,1,c,84a516841ba77a5b4648de2cd0dfcb30ea46dbb4,3,1,threads,3,0.0003826000029221177,3,7841.087237552065
+base,bcrypt,abc,3,1,c,$2b$10$abcdefghijklmnopqrstuuxGxsVny3RSAvxfhLYeqz84o2Vw8ih8K,3,1,threads,1,0.16789690000587143,3,17.868108344436905
+base,bcrypt,abc,3,1,c,$2b$10$abcdefghijklmnopqrstuuxGxsVny3RSAvxfhLYeqz84o2Vw8ih8K,3,1,threads,2,0.16472990000329446,3,18.21163006800831
+base,bcrypt,abc,3,1,c,$2b$10$abcdefghijklmnopqrstuuxGxsVny3RSAvxfhLYeqz84o2Vw8ih8K,3,1,threads,3,0.16699569999764208,3,17.96453441640928
+base,argon2id,abc,3,1,c,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$pvMmFN9kwekkJIwzeaRbhGN6a8tWVoSLv+LGRvg5mkA",3,1,threads,1,0.27283050000551157,3,10.995838075066372
+base,argon2id,abc,3,1,c,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$pvMmFN9kwekkJIwzeaRbhGN6a8tWVoSLv+LGRvg5mkA",3,1,threads,2,0.2990933999972185,3,10.030311601753496
+base,argon2id,abc,3,1,c,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$pvMmFN9kwekkJIwzeaRbhGN6a8tWVoSLv+LGRvg5mkA",3,1,threads,3,0.27568400000745896,3,10.882024346421378
