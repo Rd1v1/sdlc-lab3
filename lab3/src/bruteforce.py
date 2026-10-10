@@ -5,6 +5,7 @@ import base64
 import binascii
 import hashlib
 import json
+import multiprocessing
 import os
 import re
 import shutil
@@ -12,10 +13,11 @@ import subprocess
 import sys
 import tempfile
 import time
-from concurrent.futures import CancelledError, ThreadPoolExecutor, as_completed
+import threading
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterator
+from typing import Callable, Iterator
 
 
 class TargetError(ValueError):
@@ -93,6 +95,7 @@ class CrackConfig:
     max_length: int
     candidate_limit: int = 2_000_000
     workers: int = 1
+    backend: str = "threads"
 
     def validate(self) -> int:
         if not self.alphabet or len(self.alphabet) > 128 or len(set(self.alphabet)) != len(self.alphabet):
@@ -102,7 +105,13 @@ class CrackConfig:
         if self.candidate_limit < 1:
             raise ValueError("Лимит кандидатов должен быть положительным")
         if not 1 <= self.workers <= min(64, os.cpu_count() or 1):
-            raise ValueError("Число потоков должно быть от 1 до числа логических процессоров (максимум 64)")
+            raise ValueError("Число воркеров должно быть от 1 до числа логических процессоров (максимум 64)")
+        if self.backend not in ("threads", "processes"):
+            raise ValueError("Режим воркеров: threads или processes")
+        if self.backend == "processes" and os.name == "nt" and self.workers > 61:
+            raise ValueError("На Windows допускается не более 61 процесса")
+        if any(ord(character) < 32 or ord(character) == 127 for character in self.alphabet):
+            raise ValueError("Управляющие символы в алфавите запрещены")
         count = sum(len(self.alphabet) ** length for length in range(self.min_length, self.max_length + 1))
         if count > self.candidate_limit:
             raise ValueError(f"Диапазон содержит {count:,} кандидатов, лимит: {self.candidate_limit:,}")
@@ -117,6 +126,7 @@ class CrackResult:
     candidates_checked: int
     total_candidates: int
     workers: int
+    backend: str = "threads"
 
 
 def candidate_at(index: int, alphabet: str, length: int) -> str:
@@ -137,59 +147,192 @@ def iter_candidates(config: CrackConfig) -> Iterator[str]:
             yield candidate_at(index, config.alphabet, length)
 
 
-def crack(target: HashTarget, config: CrackConfig) -> CrackResult:
-    total = config.validate()
-    started = time.perf_counter()
-    if config.workers == 1:
-        checked = 0
-        for candidate in iter_candidates(config):
-            checked += 1
-            if target.matches(candidate):
-                return CrackResult(True, candidate, time.perf_counter() - started, checked, total, 1)
-        return CrackResult(False, None, time.perf_counter() - started, checked, total, 1)
+@dataclass(frozen=True)
+class WorkerProgress:
+    worker: int
+    candidate: str | None
+    checked: int
+    status: str
 
-    import threading
 
-    stopped = threading.Event()
+_STATUSES = ("waiting", "running", "done", "found", "stopped", "error")
+_PROCESS_STATE = None
 
-    def scan(length: int, start: int, end: int) -> tuple[str | None, int]:
-        checked = 0
+
+def _candidate_global(index: int, config: CrackConfig) -> str:
+    for length in range(config.min_length, config.max_length + 1):
+        count = len(config.alphabet) ** length
+        if index < count:
+            return candidate_at(index, config.alphabet, length)
+        index -= count
+    raise ValueError("Индекс вне пространства перебора")
+
+
+def _publish(state, locks, worker, checked, index, status):
+    with locks[worker]:
+        offset = worker * 3
+        state[offset] = checked
+        state[offset + 1] = index
+        state[offset + 2] = status
+
+
+def _snapshot(state, locks, config):
+    rows = []
+    for worker in range(config.workers):
+        with locks[worker]:
+            checked, index, status = state[worker * 3:worker * 3 + 3]
+        rows.append(WorkerProgress(worker + 1, _candidate_global(index, config) if index >= 0 else None,
+                                   checked, _STATUSES[status]))
+    return tuple(rows)
+
+
+def _scan_worker(target, config, worker, start, end, stopped, state, locks, monitored):
+    checked = 0
+    index = -1
+    status = 2
+    next_update = 0.0
+    try:
         for index in range(start, end):
             if stopped.is_set():
+                status = 4
+                # Keep the last attempted index, rather than an untested candidate.
+                index = index - 1 if checked else -1
                 break
+            candidate = _candidate_global(index, config)
+            if monitored and time.monotonic() >= next_update:
+                _publish(state, locks, worker, checked, index, 1)
+                next_update = time.monotonic() + 0.05
+            matched = target.matches(candidate)
             checked += 1
-            candidate = candidate_at(index, config.alphabet, length)
-            if target.matches(candidate):
+            if matched:
+                status = 3
                 stopped.set()
                 return candidate, checked
         return None, checked
+    except BaseException:
+        status = 5
+        stopped.set()
+        raise
+    finally:
+        _publish(state, locks, worker, checked, index, status)
 
+
+def _initialize_process(stopped, state, locks):
+    # The parent handles Ctrl+C and asks workers to stop between verifications.
+    import signal
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    global _PROCESS_STATE
+    _PROCESS_STATE = (stopped, state, locks)
+
+
+def _scan_process(target, config, worker, start, end, monitored):
+    stopped, state, locks = _PROCESS_STATE
+    return _scan_worker(target, config, worker, start, end, stopped, state, locks, monitored)
+
+
+def crack(target: HashTarget, config: CrackConfig,
+          on_progress: Callable[[tuple[WorkerProgress, ...]], None] | None = None) -> CrackResult:
+    total = config.validate()
+    # Validate manually constructed targets as well as CLI input, before spawning workers.
+    if target.algorithm not in HASHCAT_MODES:
+        raise TargetError("Неподдерживаемый алгоритм")
+    parsed = HashTarget.parse(target.encoded)
+    if parsed.algorithm != target.algorithm:
+        raise TargetError("Алгоритм не соответствует хэшу")
+    target = parsed
+    started = time.perf_counter()
+    if config.backend == "processes":
+        context = multiprocessing.get_context("spawn")
+        stopped = context.Event()
+        state = context.RawArray("q", config.workers * 3)
+        locks = [context.Lock() for _ in range(config.workers)]
+        executor = ProcessPoolExecutor(max_workers=config.workers, mp_context=context,
+                                       initializer=_initialize_process, initargs=(stopped, state, locks))
+    else:
+        stopped = threading.Event()
+        state = [0] * (config.workers * 3)
+        locks = [threading.Lock() for _ in range(config.workers)]
+        executor = ThreadPoolExecutor(max_workers=config.workers, thread_name_prefix="candidate-check")
+    for worker in range(config.workers):
+        _publish(state, locks, worker, 0, -1, 0)
     futures = []
-    with ThreadPoolExecutor(max_workers=config.workers, thread_name_prefix="candidate-check") as executor:
-        for length in range(config.min_length, config.max_length + 1):
-            count = len(config.alphabet) ** length
-            chunk_size = max(1, (count + config.workers * 4 - 1) // (config.workers * 4))
-            for start in range(0, count, chunk_size):
-                futures.append(executor.submit(scan, length, start, min(start + chunk_size, count)))
-        checked = 0
-        password = None
-        try:
-            for future in as_completed(futures):
-                try:
-                    found, attempts = future.result()
-                except CancelledError:
-                    continue
+    password = None
+    checked = 0
+    try:
+        if on_progress:
+            on_progress(_snapshot(state, locks, config))
+        for worker in range(config.workers):
+            start, end = total * worker // config.workers, total * (worker + 1) // config.workers
+            if config.backend == "processes":
+                future = executor.submit(_scan_process, target, config, worker, start, end, on_progress is not None)
+            else:
+                future = executor.submit(_scan_worker, target, config, worker, start, end,
+                                         stopped, state, locks, on_progress is not None)
+            futures.append(future)
+        pending = set(futures)
+        while pending:
+            finished, pending = wait(pending, timeout=0.1, return_when=FIRST_COMPLETED)
+            for future in finished:
+                found, attempts = future.result()
                 checked += attempts
-                if found is not None and password is None:
+                if found is not None:
                     password = found
-                    stopped.set()
-                    for pending in futures:
-                        pending.cancel()
-        finally:
-            stopped.set()
-            for pending in futures:
-                pending.cancel()
-    return CrackResult(password is not None, password, time.perf_counter() - started, checked, total, config.workers)
+            if on_progress:
+                on_progress(_snapshot(state, locks, config))
+    finally:
+        stopped.set()
+        executor.shutdown(wait=True, cancel_futures=True)
+    return CrackResult(password is not None, password, time.perf_counter() - started,
+                       checked, total, config.workers, config.backend)
+
+
+class CliProgress:
+    """Render sampled worker state on stderr, leaving stdout as machine-readable JSON."""
+    def __init__(self, config: CrackConfig, stream=None):
+        self.config = config
+        self.stream = sys.stderr if stream is None else stream
+        self.total = config.validate()
+        self.started = time.perf_counter()
+        self.last_render = 0.0
+        self.previous = None
+        self.lines = 0
+        self.ansi = self.stream.isatty() and os.environ.get("TERM") != "dumb"
+        if config.workers + 3 >= shutil.get_terminal_size((100, 24)).lines:
+            self.ansi = False  # Full snapshots when the table cannot fit on one screen.
+        if self.ansi and os.name == "nt":
+            import ctypes
+            kernel = ctypes.windll.kernel32
+            kernel.GetStdHandle.restype = ctypes.c_void_p
+            handle = kernel.GetStdHandle(-12)
+            mode = ctypes.c_ulong()
+            self.ansi = bool(kernel.GetConsoleMode(ctypes.c_void_p(handle), ctypes.byref(mode))
+                             and kernel.SetConsoleMode(ctypes.c_void_p(handle), mode.value | 4))
+
+    def __call__(self, rows):
+        now = time.perf_counter()
+        final = all(row.status not in ("waiting", "running") for row in rows)
+        if self.previous == rows or (not final and now - self.last_render < 0.1):
+            return
+        self.previous = rows
+        self.last_render = now
+        checked = sum(row.checked for row in rows)
+        elapsed = now - self.started
+        width = min(100, max(20, shutil.get_terminal_size((100, 24)).columns - 1))
+        bar_size = 20
+        filled = int(bar_size * checked / self.total)
+        lines = [f"{self.config.backend} | workers={self.config.workers} | {elapsed:.1f}s",
+                 f"[{'#' * filled}{'-' * (bar_size - filled)}] {checked}/{self.total} "
+                 f"({100 * checked / self.total:.1f}%) | {checked / max(elapsed, 1e-9):.0f} checks/s",
+                 "WORKER  STATE     CHECKED   CANDIDATE (latest sample)"]
+        for row in rows:
+            candidate = json.dumps(row.candidate, ensure_ascii=True) if row.candidate is not None else "-"
+            lines.append(f"{row.worker:>6}  {row.status:<8}  {row.checked:>7}   {candidate}")
+        if self.ansi and self.lines:
+            self.stream.write(f"\x1b[{self.lines}A")
+        for line in lines:
+            self.stream.write(("\x1b[2K" if self.ansi else "") + line[:width] + "\n")
+        self.stream.flush()
+        self.lines = len(lines)
 
 
 HASHCAT_MODES = {"md5": "0", "sha1": "100", "bcrypt": "3200", "argon2id": "34000"}
@@ -251,6 +394,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-length", type=int, default=6)
     parser.add_argument("--candidate-limit", type=int, default=2_000_000)
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--backend", choices=("threads", "processes"), default="threads")
+    parser.add_argument("--interactive", action="store_true", help="Запросить режим и число воркеров")
+    progress = parser.add_mutually_exclusive_group()
+    progress.add_argument("--progress", dest="progress", action="store_true", help="Показать кандидатов воркеров в stderr")
+    progress.add_argument("--no-progress", dest="progress", action="store_false", help="Отключить таблицу воркеров")
+    parser.set_defaults(progress=None)
     parser.add_argument("--compare-hashcat", action="store_true")
     return parser
 
@@ -259,14 +408,22 @@ def run(arguments: list[str] | None = None) -> int:
     options = build_parser().parse_args(arguments)
     try:
         target = HashTarget.parse(options.target)
-        config = CrackConfig(options.alphabet, options.min_length, options.max_length, options.candidate_limit, options.workers)
-        result = crack(target, config)
+        if options.interactive:
+            print("Режим: threads / processes", file=sys.stderr)
+            print("Режим [threads]: ", end="", file=sys.stderr, flush=True)
+            options.backend = input().strip() or "threads"
+            print("Число воркеров [1]: ", end="", file=sys.stderr, flush=True)
+            options.workers = int(input().strip() or "1")
+        config = CrackConfig(options.alphabet, options.min_length, options.max_length,
+                             options.candidate_limit, options.workers, options.backend)
+        enabled = sys.stderr.isatty() if options.progress is None else options.progress
+        result = crack(target, config, on_progress=CliProgress(config) if enabled else None)
         report: dict[str, object] = {"algorithm": target.algorithm, **asdict(result)}
         if options.compare_hashcat:
             report["hashcat"] = compare_hashcat(target, config)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0 if result.found else 1
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print("Перебор прерван", file=sys.stderr)
         return 130
     except (TargetError, ValueError, RuntimeError, OSError, subprocess.TimeoutExpired) as error:

@@ -3,11 +3,11 @@ $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath (Split-Path -Parent $PSScriptRoot)
 New-Item -ItemType Directory -Force .tools\hashcat | Out-Null
 $downloads = @(
-    @('https://hashcat.net/files/hashcat-7.1.2.7z', '.tools/hashcat.7z', '80DB0316387794CE9D14ED376DA75B8A7742972485B45DB790F5F8260307FF98')
+    @{ Url = 'https://hashcat.net/files/hashcat-7.1.2.7z'; Path = '.tools/hashcat.7z'; Sha256 = '80DB0316387794CE9D14ED376DA75B8A7742972485B45DB790F5F8260307FF98' }
 )
 foreach ($download in $downloads) {
-    if (-not (Test-Path -LiteralPath $download[1])) { Invoke-WebRequest $download[0] -OutFile $download[1] }
-    if ((Get-FileHash -LiteralPath $download[1] -Algorithm SHA256).Hash -ne $download[2]) { throw "Checksum mismatch: $($download[1])" }
+    if (-not (Test-Path -LiteralPath $download.Path)) { Invoke-WebRequest $download.Url -OutFile $download.Path }
+    if ((Get-FileHash -LiteralPath $download.Path -Algorithm SHA256).Hash -ne $download.Sha256) { throw "Checksum mismatch: $($download.Path)" }
 }
 if (-not (Test-Path .tools/hashcat/hashcat-7.1.2/hashcat.exe)) {
     & tar -xf .tools/hashcat.7z -C .tools/hashcat

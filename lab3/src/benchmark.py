@@ -24,9 +24,15 @@ def make_target(algorithm, password):
     return HashTarget.parse(hash_secret(raw, b'saltsalt', 3, 65536, 2, 32, Type.ID).decode())
 
 
-def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False):
+def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, backend='threads', worker_counts=None):
     if not 1 <= repeats <= 20:
         raise ValueError('repeats must be 1..20')
+    CrackConfig('abc', 1, 1, backend=backend).validate()
+    if worker_counts is not None:
+        if not worker_counts or len(set(worker_counts)) != len(worker_counts):
+            raise ValueError('workers must be a nonempty list of unique counts')
+        for workers in worker_counts:
+            CrackConfig('abc', 1, 1, workers=workers, backend=backend).validate()
     # Change one variable at a time. Last-position scenarios exhaust their range.
     scenarios = [('base', 'abc', 1, 'c'), ('length2', 'abc', 2, 'cc'),
                  ('length3', 'abc', 3, 'ccc'), ('alphabet4', 'abcd', 2, 'dd'),
@@ -39,8 +45,10 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False):
         for algorithm in ('md5', 'sha1', 'bcrypt', 'argon2id'):
             target = make_target(algorithm, password)
             workers_set = (1, 2) if scenario in ('base', 'length2') and (os.cpu_count() or 1) >= 2 else (1,)
+            if worker_counts is not None:
+                workers_set = worker_counts
             for workers in workers_set:
-                config = CrackConfig(alphabet, length, length, workers=workers)
+                config = CrackConfig(alphabet, length, length, workers=workers, backend=backend)
                 target.matches(password)  # Warm up imports/backends outside timing.
                 for repeat in range(1, repeats + 1):
                     result = crack(target, config)
@@ -49,7 +57,7 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False):
                     rows.append(dict(scenario=scenario, algorithm=algorithm, alphabet=alphabet,
                                      alphabet_size=len(alphabet), password_length=length, expected_password=password,
                                      target_hash=target.encoded, total_search_space=result.total_candidates,
-                                     workers=workers, repeat=repeat, elapsed_seconds=result.elapsed_seconds,
+                                     workers=workers, backend=backend, repeat=repeat, elapsed_seconds=result.elapsed_seconds,
                                      attempts=result.candidates_checked,
                                      attempts_per_second=result.candidates_checked / result.elapsed_seconds))
             if include_hashcat and scenario in ('base', 'length2'):
@@ -62,20 +70,20 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False):
             for length in (4, 5):
                 password = '9' * length
                 target = make_target(algorithm, password)
-                for workers in (1, 2):
+                for workers in (worker_counts if worker_counts is not None else ((1, 2) if (os.cpu_count() or 1) >= 2 else (1,))):
                     for repeat in range(1, repeats + 1):
-                        result = crack(target, CrackConfig('0123456789', length, length, workers=workers))
+                        result = crack(target, CrackConfig('0123456789', length, length, workers=workers, backend=backend))
                         if result.password != password:
                             raise RuntimeError('Incorrect fast benchmark result')
                         rows.append(dict(scenario='fast' + str(length), algorithm=algorithm, alphabet='0123456789',
                                          alphabet_size=10, password_length=length, expected_password=password,
                                          target_hash=target.encoded, total_search_space=result.total_candidates,
-                                         workers=workers, repeat=repeat, elapsed_seconds=result.elapsed_seconds,
+                                         workers=workers, backend=backend, repeat=repeat, elapsed_seconds=result.elapsed_seconds,
                                          attempts=result.candidates_checked,
                                          attempts_per_second=result.candidates_checked / result.elapsed_seconds))
     return dict(created_utc=datetime.now(timezone.utc).isoformat(), python=sys.version,
                 platform=platform.platform(), processor=platform.processor(), logical_processors=os.cpu_count(),
-                repeats=repeats, results=rows, professional=professional)
+                repeats=repeats, backend=backend, results=rows, professional=professional)
 
 
 def save(report, output):
@@ -89,10 +97,11 @@ def save(report, output):
     for row in report['results']:
         groups.setdefault((row['scenario'], row['algorithm'], row['workers']), []).append(row)
     lines = ['# LAB 3 — фактический анализ', '', '## Цель', '',
-             'Сравнить цену проверки хэша, сложность пространства кандидатов и влияние потоков.', '',
+             'Сравнить цену проверки хэша, сложность пространства кандидатов и влияние воркеров.', '',
              '## Методика', '',
              'perf_counter; прогрев verifier вне замера; одинаковые кандидаты для четырёх алгоритмов; '
-             'повторы и медианы. CSV содержит каждый прогон. Генерация тестового хэша не входит в время перебора.', '',
+             'повторы и медианы. CSV содержит каждый прогон. Генерация тестового хэша не входит в время перебора. '
+             f"Режим: {report.get('backend', 'threads')}; запуск/завершение воркеров входят в замер; CLI-прогресс отключён.", '',
              '## Тестовое окружение', '',
              f"{report['created_utc']}; {report['platform']}; Python {platform.python_version()}; "
              f"CPU {report['processor']}; logical CPUs {report['logical_processors']}.", '',
@@ -160,10 +169,12 @@ def main(argv=None):
     parser.add_argument('--hashcat', action='store_true')
     parser.add_argument('--hashcat-path', default='hashcat')
     parser.add_argument('--smoke', action='store_true')
+    parser.add_argument('--backend', choices=('threads', 'processes'), default='threads')
+    parser.add_argument('--workers', nargs='+', type=int, help='Числа воркеров для сравнения, например 1 2 4')
     parser.add_argument('--output', type=Path, default=Path('benchmarks'))
     args = parser.parse_args(argv)
     try:
-        report = run(args.repeats, args.hashcat, args.hashcat_path, args.smoke)
+        report = run(args.repeats, args.hashcat, args.hashcat_path, args.smoke, args.backend, args.workers)
         save(report, args.output)
         print(f'Saved {len(report["results"])} measurements to {args.output}')
         return 0
