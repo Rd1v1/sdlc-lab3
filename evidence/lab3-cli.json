@@ -1,0 +1,9 @@
+{
+  "algorithm": "md5",
+  "found": true,
+  "password": "c",
+  "elapsed_seconds": 4.060000355821103e-05,
+  "candidates_checked": 3,
+  "total_candidates": 3,
+  "workers": 1
+}

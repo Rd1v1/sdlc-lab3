@@ -1,0 +1,148 @@
+{
+  "created_utc": "2026-09-25T23:38:29.924238+00:00",
+  "python": "3.13.0 (tags/v3.13.0:60403a5, Oct  7 2024, 09:38:07) [MSC v.1941 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 23 Model 113 Stepping 0, AuthenticAMD",
+  "logical_processors": 12,
+  "repeats": 2,
+  "candidate_space": {
+    "alphabet": "abc",
+    "min_length": 1,
+    "max_length": 1,
+    "count": 3
+  },
+  "results": [
+    {
+      "algorithm": "md5",
+      "workers": 1,
+      "runs": [
+        {
+          "elapsed_seconds": 3.789999982473091e-05,
+          "candidates_checked": 3
+        },
+        {
+          "elapsed_seconds": 1.0000000202126103e-05,
+          "candidates_checked": 3
+        }
+      ],
+      "hashcat": {
+        "available": false,
+        "reason": "hashcat is not installed",
+        "elapsed_seconds": null
+      }
+    },
+    {
+      "algorithm": "md5",
+      "workers": 2,
+      "runs": [
+        {
+          "elapsed_seconds": 0.0013378999997257779,
+          "candidates_checked": 3
+        },
+        {
+          "elapsed_seconds": 0.0005373999997573264,
+          "candidates_checked": 3
+        }
+      ]
+    },
+    {
+      "algorithm": "sha1",
+      "workers": 1,
+      "runs": [
+        {
+          "elapsed_seconds": 2.900000026784255e-05,
+          "candidates_checked": 3
+        },
+        {
+          "elapsed_seconds": 8.400000297115184e-06,
+          "candidates_checked": 3
+        }
+      ],
+      "hashcat": {
+        "available": false,
+        "reason": "hashcat is not installed",
+        "elapsed_seconds": null
+      }
+    },
+    {
+      "algorithm": "sha1",
+      "workers": 2,
+      "runs": [
+        {
+          "elapsed_seconds": 0.0008106999998744868,
+          "candidates_checked": 3
+        },
+        {
+          "elapsed_seconds": 0.000495000000228174,
+          "candidates_checked": 3
+        }
+      ]
+    },
+    {
+      "algorithm": "bcrypt",
+      "workers": 1,
+      "runs": [
+        {
+          "elapsed_seconds": 0.1664762000000337,
+          "candidates_checked": 3
+        },
+        {
+          "elapsed_seconds": 0.1645645000003242,
+          "candidates_checked": 3
+        }
+      ],
+      "hashcat": {
+        "available": false,
+        "reason": "hashcat is not installed",
+        "elapsed_seconds": null
+      }
+    },
+    {
+      "algorithm": "bcrypt",
+      "workers": 2,
+      "runs": [
+        {
+          "elapsed_seconds": 0.11038439999992988,
+          "candidates_checked": 3
+        },
+        {
+          "elapsed_seconds": 0.11011510000025737,
+          "candidates_checked": 3
+        }
+      ]
+    },
+    {
+      "algorithm": "argon2id",
+      "workers": 1,
+      "runs": [
+        {
+          "elapsed_seconds": 0.3038718000002518,
+          "candidates_checked": 3
+        },
+        {
+          "elapsed_seconds": 0.2589185000001635,
+          "candidates_checked": 3
+        }
+      ],
+      "hashcat": {
+        "available": false,
+        "reason": "hashcat is not installed",
+        "elapsed_seconds": null
+      }
+    },
+    {
+      "algorithm": "argon2id",
+      "workers": 2,
+      "runs": [
+        {
+          "elapsed_seconds": 0.18772989999979472,
+          "candidates_checked": 3
+        },
+        {
+          "elapsed_seconds": 0.1940506999999343,
+          "candidates_checked": 3
+        }
+      ]
+    }
+  ]
+}

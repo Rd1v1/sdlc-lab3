@@ -1,0 +1,16 @@
+{
+  "description": "Локальные контролируемые векторы для короткого учебного поиска",
+  "password": "c",
+  "hashes": {
+    "md5": "4a8a08f09d37b73795649038408b5f33",
+    "sha1": "84a516841ba77a5b4648de2cd0dfcb30ea46dbb4",
+    "bcrypt": "$2b$10$abcdefghijklmnopqrstuuxGxsVny3RSAvxfhLYeqz84o2Vw8ih8K",
+    "argon2id": "$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$pvMmFN9kwekkJIwzeaRbhGN6a8tWVoSLv+LGRvg5mkA"
+  },
+  "candidate_space": {
+    "alphabet": "abc",
+    "min_length": 1,
+    "max_length": 1,
+    "count": 3
+  }
+}

@@ -1,0 +1,16 @@
+.git
+.venv
+.cache
+.tools
+.tmp
+artifacts
+dist
+build
+**/__pycache__
+**/*.pyc
+lab1-data
+*.htm
+.env
+.secrets
+.state
+**/*.pdf
