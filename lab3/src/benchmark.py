@@ -24,9 +24,11 @@ def make_target(algorithm, password):
     return HashTarget.parse(hash_secret(raw, b'saltsalt', 3, 65536, 2, 32, Type.ID).decode())
 
 
-def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, backend='threads', worker_counts=None):
+def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, backend='threads', worker_counts=None, hashcat_device='auto'):
     if not 1 <= repeats <= 20:
         raise ValueError('repeats must be 1..20')
+    if hashcat_device not in ('auto', 'cpu', 'gpu'):
+        raise ValueError('hashcat device must be auto, cpu or gpu')
     CrackConfig('abc', 1, 1, backend=backend).validate()
     if worker_counts is not None:
         if not worker_counts or len(set(worker_counts)) != len(worker_counts):
@@ -62,7 +64,7 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, bac
                                      attempts_per_second=result.candidates_checked / result.elapsed_seconds))
             if include_hashcat and scenario in ('base', 'length2'):
                 for repeat in range(1, repeats + 1):
-                    measured = compare_hashcat(target, CrackConfig(alphabet, length, length), executable)
+                    measured = compare_hashcat(target, CrackConfig(alphabet, length, length), executable, hashcat_device)
                     professional.append(dict(scenario=scenario, algorithm=algorithm, repeat=repeat,
                                              target_hash=target.encoded, total_search_space=len(alphabet) ** length,
                                              alphabet=alphabet, password_length=length, **measured))
@@ -85,7 +87,7 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, bac
                                          attempts_per_second=result.candidates_checked / result.elapsed_seconds))
     return dict(created_utc=datetime.now(timezone.utc).isoformat(), python=sys.version,
                 platform=platform.platform(), processor=platform.processor(), logical_processors=os.cpu_count(),
-                repeats=repeats, backend=backend, results=rows, professional=professional)
+                repeats=repeats, backend=backend, hashcat_device=hashcat_device, results=rows, professional=professional)
 
 
 def speed_summary(report):
@@ -93,7 +95,7 @@ def speed_summary(report):
     lines = ['', '## Сравнение времени поиска пароля', '',
              'Одинаковое задание: проверить варианты a, b, c и найти пароль c. '
              'В таблице медианное время успешных запусков. Меньше время — быстрее выполнено это задание. '
-             'У приложения учтены создание воркеров и поиск; у hashcat — запуск, подготовка GPU и поиск.', '',
+             'У приложения учтены создание воркеров и поиск; у hashcat — запуск, подготовка вычислительного устройства и поиск.', '',
              '| Алгоритм | Вариантов пароля в наборе | Моё приложение: время, с | Hashcat: время, с |',
              '| --- | ---: | ---: | ---: |']
     rates = ['', '## Скорость выполнения задания с учётом запуска', '',
@@ -134,10 +136,10 @@ def speed_summary(report):
         description = '; '.join(f"{label}: {mode}, воркеров {workers}; запусков приложения {own_runs}, hashcat {external_runs}"
                                 for mode, workers, own_runs, external_runs, label in conditions) + '.'
     lines += ['', description, *rates, '',
-              'Это эффективная скорость короткого задания, а не скорость GPU во время самого перебора. '
+              'Это эффективная скорость короткого задания, а не скорость устройства во время самого перебора. '
               'На трёх кандидатах большую часть времени hashcat занимает подготовка. '
               'Например, для MD5: 3 варианта ÷ полное время hashcat. '
-              'Из этой таблицы нельзя сделать вывод, что приложение быстрее GPU на большом наборе.', '',
+              'Из этой таблицы нельзя сделать вывод о скорости инструментов на большом наборе.', '',
               'bcrypt: cost=10. Argon2id: m=65536 KiB, t=3, p=2. '
               '«Нет замера» означает отсутствие успешного сопоставимого запуска.', '']
     return lines
@@ -185,7 +187,7 @@ def save(report, output):
               'Сравнение workers=1/2 использует реальные попытки: потоки могут закончить уже начатые проверки.', '',
               '## Сравнение с hashcat', '',
               'Одинаковый полный набор кандидатов передаётся как wordlist. Внешнее время включает запуск процесса, '
-              'инициализацию устройства и компиляцию kernels; оно не равно чистой GPU throughput. '
+              'инициализацию устройства и компиляцию kernels; оно не равно скорости устройства во время самого перебора. '
               'Нулевые/отсутствующие измерения не заменяются выдуманными числами.']
     lines += speed_summary(report)
     # Detailed external runs are retained for reproducibility below the summary.
@@ -213,13 +215,14 @@ def main(argv=None):
     parser.add_argument('--repeats', type=int, default=3)
     parser.add_argument('--hashcat', action='store_true')
     parser.add_argument('--hashcat-path', default='hashcat')
+    parser.add_argument('--hashcat-device', choices=('auto', 'cpu', 'gpu'), default='auto')
     parser.add_argument('--smoke', action='store_true')
     parser.add_argument('--backend', choices=('threads', 'processes'), default='threads')
     parser.add_argument('--workers', nargs='+', type=int, help='Числа воркеров для сравнения, например 1 2 4')
     parser.add_argument('--output', type=Path, default=Path('benchmarks'))
     args = parser.parse_args(argv)
     try:
-        report = run(args.repeats, args.hashcat, args.hashcat_path, args.smoke, args.backend, args.workers)
+        report = run(args.repeats, args.hashcat, args.hashcat_path, args.smoke, args.backend, args.workers, args.hashcat_device)
         save(report, args.output)
         print(f'Saved {len(report["results"])} measurements to {args.output}')
         return 0

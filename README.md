@@ -27,10 +27,12 @@ powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
 .venv/Scripts/python.exe -m lab3.src.benchmark --repeats 3 --backend processes --workers 1 2 --output artifacts/full-processes
 ```
 
-CSV/JSON и анализ создаются в указанном каталоге `artifacts`. Для установки portable hashcat выполните `powershell -ExecutionPolicy Bypass -File scripts/setup-tools.ps1`. Для сравнения используйте `--hashcat --hashcat-path .tools/hashcat/hashcat-7.1.2/hashcat.exe` у benchmark. При отсутствии hashcat результат отмечается как недоступный.
+CSV/JSON и анализ создаются в указанном каталоге `artifacts`. Для установки portable hashcat выполните `powershell -ExecutionPolicy Bypass -File scripts/setup-tools.ps1`. Для CPU-сравнения используйте следующий скрипт. При отсутствии подходящего устройства результат отмечается как недоступный.
 
-Сводная таблица фактических скоростей находится в [REPORT.md](REPORT.md). Повторить сравнение с тремя замерами:
+Сводная таблица фактических скоростей находится в [REPORT.md](REPORT.md). Повторить CPU-сравнение с тремя замерами (нужен Docker Desktop с Linux engine):
 
 ```powershell
-.venv/Scripts/python.exe -m lab3.src.benchmark --smoke --repeats 3 --backend threads --workers 1 --hashcat --hashcat-path .tools/hashcat/hashcat-7.1.2/hashcat.exe --output artifacts/hashcat-summary
+powershell -ExecutionPolicy Bypass -File scripts/benchmark-cpu.ps1 -Repeats 3
 ```
+
+Оба инструмента запускаются в одном контейнере, ограниченном одним логическим CPU. Hashcat использует CPU OpenCL (PoCL), параметры `-D 1 --backend-ignore-cuda --backend-ignore-hip`. Python-пакеты и PoCL устанавливаются внутри контейнера; результаты сохраняются в `artifacts/cpu-summary`.

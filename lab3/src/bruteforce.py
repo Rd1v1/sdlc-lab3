@@ -338,7 +338,9 @@ class CliProgress:
 HASHCAT_MODES = {"md5": "0", "sha1": "100", "bcrypt": "3200", "argon2id": "34000"}
 
 
-def compare_hashcat(target: HashTarget, config: CrackConfig, executable: str = "hashcat") -> dict[str, object]:
+def compare_hashcat(target: HashTarget, config: CrackConfig, executable: str = "hashcat", device_type: str = "auto") -> dict[str, object]:
+    if device_type not in ('auto', 'cpu', 'gpu'):
+        raise ValueError('hashcat device must be auto, cpu or gpu')
     binary = shutil.which(executable)
     if binary is None:
         return {"available": False, "reason": "hashcat is not installed", "elapsed_seconds": None}
@@ -370,19 +372,27 @@ def compare_hashcat(target: HashTarget, config: CrackConfig, executable: str = "
             str(target_file),
             str(wordlist),
         ]
+        device_args = []
+        if device_type == 'cpu':
+            device_args = ['--backend-ignore-cuda', '--backend-ignore-hip', '-D', '1']
+        elif device_type == 'gpu':
+            device_args = ['-D', '2']
+        command[1:1] = device_args
         started = time.perf_counter()
         process = subprocess.run(command, cwd=Path(binary).parent, capture_output=True, text=True,
                                  encoding='utf-8', errors='replace', timeout=300, check=False)
         elapsed = time.perf_counter() - started
         output_text = process.stdout + process.stderr
         if process.returncode not in (0, 1):
-            return {"available": True, "supported": False, "reason": output_text.strip()[-1000:], "elapsed_seconds": elapsed}
+            return {"available": True, "supported": False, "reason": output_text.strip()[-1000:], "elapsed_seconds": elapsed,
+                    "device_type": device_type}
         return {
             "available": True,
             "supported": True,
             "cracked": cracked_file.exists() and any(target.matches(line) for line in cracked_file.read_text(encoding='utf-8').splitlines()),
             "elapsed_seconds": elapsed,
-            "command": f"hashcat --potfile-disable --restore-disable --logfile-disable -m {mode} -a 0 target.hash candidates.txt",
+            "device_type": device_type,
+            "command": f"hashcat {' '.join(device_args)} --potfile-disable --restore-disable --logfile-disable -m {mode} -a 0 target.hash candidates.txt",
         }
 
 
@@ -401,6 +411,7 @@ def build_parser() -> argparse.ArgumentParser:
     progress.add_argument("--no-progress", dest="progress", action="store_false", help="Отключить таблицу воркеров")
     parser.set_defaults(progress=None)
     parser.add_argument("--compare-hashcat", action="store_true")
+    parser.add_argument("--hashcat-device", choices=('auto', 'cpu', 'gpu'), default='auto')
     return parser
 
 
@@ -420,7 +431,7 @@ def run(arguments: list[str] | None = None) -> int:
         result = crack(target, config, on_progress=CliProgress(config) if enabled else None)
         report: dict[str, object] = {"algorithm": target.algorithm, **asdict(result)}
         if options.compare_hashcat:
-            report["hashcat"] = compare_hashcat(target, config)
+            report["hashcat"] = compare_hashcat(target, config, device_type=options.hashcat_device)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0 if result.found else 1
     except (KeyboardInterrupt, EOFError):

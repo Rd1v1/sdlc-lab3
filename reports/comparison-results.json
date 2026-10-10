@@ -1,11 +1,12 @@
 {
-  "created_utc": "2026-10-10T07:58:43.221524+00:00",
-  "python": "3.13.0 (tags/v3.13.0:60403a5, Oct  7 2024, 09:38:07) [MSC v.1941 64 bit (AMD64)]",
-  "platform": "Windows-11-10.0.26200-SP0",
-  "processor": "AMD64 Family 23 Model 113 Stepping 0, AuthenticAMD",
+  "created_utc": "2026-10-10T08:32:56.940321+00:00",
+  "python": "3.13.15 (main, Sep 19 2026, 01:05:27) [GCC 14.2.0]",
+  "platform": "Linux-6.18.40.1-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+  "processor": "",
   "logical_processors": 12,
   "repeats": 3,
   "backend": "threads",
+  "hashcat_device": "cpu",
   "results": [
     {
       "scenario": "base",
@@ -19,9 +20,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 1,
-      "elapsed_seconds": 0.0010746000043582171,
+      "elapsed_seconds": 0.0006162290010252036,
       "attempts": 3,
-      "attempts_per_second": 2791.736448755822
+      "attempts_per_second": 4868.320048243398
     },
     {
       "scenario": "base",
@@ -35,9 +36,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 2,
-      "elapsed_seconds": 0.0003023000026587397,
+      "elapsed_seconds": 0.0007147439973778091,
       "attempts": 3,
-      "attempts_per_second": 9923.916551819018
+      "attempts_per_second": 4197.307023222496
     },
     {
       "scenario": "base",
@@ -51,9 +52,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 3,
-      "elapsed_seconds": 0.0002651000104378909,
+      "elapsed_seconds": 0.0006627440016018227,
       "attempts": 3,
-      "attempts_per_second": 11316.483899961433
+      "attempts_per_second": 4526.634707744067
     },
     {
       "scenario": "base",
@@ -67,9 +68,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 1,
-      "elapsed_seconds": 0.0005660000024363399,
+      "elapsed_seconds": 0.001320896000834182,
       "attempts": 3,
-      "attempts_per_second": 5300.3533340751555
+      "attempts_per_second": 2271.1856180239915
     },
     {
       "scenario": "base",
@@ -83,9 +84,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 2,
-      "elapsed_seconds": 0.0004915999888908118,
+      "elapsed_seconds": 0.0002918499958468601,
       "attempts": 3,
-      "attempts_per_second": 6102.522513820323
+      "attempts_per_second": 10279.253187223492
     },
     {
       "scenario": "base",
@@ -99,9 +100,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 3,
-      "elapsed_seconds": 0.0003826000029221177,
+      "elapsed_seconds": 0.0003189899944118224,
       "attempts": 3,
-      "attempts_per_second": 7841.087237552065
+      "attempts_per_second": 9404.68369715365
     },
     {
       "scenario": "base",
@@ -115,9 +116,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 1,
-      "elapsed_seconds": 0.16789690000587143,
+      "elapsed_seconds": 0.177462640000158,
       "attempts": 3,
-      "attempts_per_second": 17.868108344436905
+      "attempts_per_second": 16.904966589008982
     },
     {
       "scenario": "base",
@@ -131,9 +132,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 2,
-      "elapsed_seconds": 0.16472990000329446,
+      "elapsed_seconds": 0.17726703899825225,
       "attempts": 3,
-      "attempts_per_second": 18.21163006800831
+      "attempts_per_second": 16.923619963153886
     },
     {
       "scenario": "base",
@@ -147,9 +148,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 3,
-      "elapsed_seconds": 0.16699569999764208,
+      "elapsed_seconds": 0.17765421000513015,
       "attempts": 3,
-      "attempts_per_second": 17.96453441640928
+      "attempts_per_second": 16.886737442998783
     },
     {
       "scenario": "base",
@@ -163,9 +164,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 1,
-      "elapsed_seconds": 0.27283050000551157,
+      "elapsed_seconds": 0.5213694159974693,
       "attempts": 3,
-      "attempts_per_second": 10.995838075066372
+      "attempts_per_second": 5.75407745055487
     },
     {
       "scenario": "base",
@@ -179,9 +180,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 2,
-      "elapsed_seconds": 0.2990933999972185,
+      "elapsed_seconds": 0.5049400830030208,
       "attempts": 3,
-      "attempts_per_second": 10.030311601753496
+      "attempts_per_second": 5.941298979788167
     },
     {
       "scenario": "base",
@@ -195,9 +196,9 @@
       "workers": 1,
       "backend": "threads",
       "repeat": 3,
-      "elapsed_seconds": 0.27568400000745896,
+      "elapsed_seconds": 0.5141432519958471,
       "attempts": 3,
-      "attempts_per_second": 10.882024346421378
+      "attempts_per_second": 5.83494967278931
     }
   ],
   "professional": [
@@ -212,8 +213,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.4839620999991894,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 45.292198613002256,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -226,8 +228,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.6480330000049435,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 2.601132145005977,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -240,8 +243,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.319481700003962,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 2.7107391739991726,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -254,8 +258,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.268981299988809,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 25.91357493399846,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -268,8 +273,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.4863917999900877,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 2.7395162340035313,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -282,8 +288,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.3949794999934966,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 2.6971443820002605,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -296,8 +303,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 10.425125900001149,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 57.87302069600264,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -310,8 +318,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 10.118198900003335,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 16.453721974001382,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -324,8 +333,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 10.440004399992176,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 22.43293679800263,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -338,8 +348,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.3743845999997575,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 49.10860518099798,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -352,8 +363,9 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.5746827999973902,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 5.048779809003463,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash candidates.txt"
     },
     {
       "scenario": "base",
@@ -366,9 +378,14 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.210631199995987,
-      "command": "hashcat --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash candidates.txt"
+      "elapsed_seconds": 4.881024034002621,
+      "device_type": "cpu",
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash candidates.txt"
     }
   ],
-  "hashcat_environment": "hashcat (v7.1.2) starting in backend information mode\n\nSuccessfully initialized the NVIDIA main driver CUDA runtime library.\n\nFailed to initialize NVIDIA RTC library.\n\n* Device #1: CUDA SDK Toolkit not installed or incorrectly installed.\n             CUDA SDK Toolkit required for proper device support and utilization.\n             For more information, see: https://hashcat.net/faq/wrongdriver\n             Falling back to OpenCL runtime.\n\nIf you are using WSL2 you can use CUDA instead of OpenCL.\nUsers must not install any NVIDIA GPU Linux driver within WSL 2\nFor all details: https://docs.nvidia.com/cuda/wsl-user-guide/index.html\n\nTLDR; go to https://developer.nvidia.com/cuda-downloads and follow this path:\n  Linux -> Architecture -> Distribution -> Version -> deb (local)\nFollow the installation Instructions on the website.\n\nOpenCL Info:\n============\n\nOpenCL Platform ID #1\n  Vendor..: NVIDIA Corporation\n  Name....: NVIDIA CUDA\n  Version.: OpenCL 3.0 CUDA 13.1.123\n\n  Backend Device ID #01\n    Type...........: GPU\n    Vendor.ID......: 32\n    Vendor.........: NVIDIA Corporation\n    Name...........: NVIDIA GeForce RTX 4070 SUPER\n    Version........: OpenCL 3.0 CUDA\n    Processor(s)...: 56\n    Preferred.Thrd.: 32\n    Clock..........: 2640\n    Memory.Total...: 12281 MB (limited to 3070 MB allocatable in one block)\n    Memory.Free....: 12281 MB\n    Memory.Unified.: 0\n    Local.Memory...: 48 KB\n    OpenCL.Version.: OpenCL C 1.2 \n    Driver.Version.: 591.86\n    PCI.Addr.BDF...: 2b:00.0\n\n"
+  "hashcat_environment": "hashcat (v7.1.2) starting in backend information mode\n\nOpenCL Info:\n============\n\nOpenCL Platform ID #1\n  Vendor..: The pocl project\n  Name....: Portable Computing Language\n  Version.: OpenCL 3.0 PoCL 6.0+debian  Linux, None+Asserts, RELOC, SPIR-V, LLVM 18.1.8, SLEEF, DISTRO, POCL_DEBUG\n\n  Backend Device ID #01\n    Type...........: CPU\n    Vendor.ID......: 1\n    Vendor.........: AuthenticAMD\n    Name...........: cpu-haswell-AMD Ryzen 5 3600 6-Core Processor\n    Version........: OpenCL 3.0 PoCL HSTR: cpu-x86_64-pc-linux-gnu-haswell\n    Processor(s)...: 1\n    Preferred.Thrd.: 1\n    Clock..........: 4000\n    Memory.Total...: 30013 MB (limited to 4096 MB allocatable in one block)\n    Memory.Free....: 15006 MB\n    Memory.Unified.: 1\n    Local.Memory...: 512 KB\n    OpenCL.Version.: OpenCL C 1.2 PoCL\n    Driver.Version.: 6.0+debian\n\n",
+  "cpu_affinity": [
+    0
+  ],
+  "pocl_max_pthread_count": "1"
 }
