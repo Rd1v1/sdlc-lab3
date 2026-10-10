@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from lab3.src.bruteforce import CrackConfig, HashTarget, TargetError, candidate_at, crack, compare_hashcat
+from lab3.src.bruteforce import CrackConfig, HashTarget, TargetError, candidate_at, crack
 
 
 class BruteForceTests(unittest.TestCase):
@@ -87,12 +87,6 @@ class BruteForceTests(unittest.TestCase):
         result = crack(target, CrackConfig("ab", 1, 2, candidate_limit=6))
         self.assertTrue(result.found)
         self.assertEqual(result.password, "ba")
-
-    def test_hashcat_unavailable_is_not_reported_as_a_measurement(self):
-        target = HashTarget.parse("900150983cd24fb0d6963f7d28e17f72")
-        result = compare_hashcat(target, CrackConfig("abc", 1, 1, candidate_limit=3), "missing-hashcat-for-test")
-        self.assertFalse(result["available"])
-        self.assertIsNone(result["elapsed_seconds"])
 
     def test_assignment_easy_and_medium_hashes(self):
         path = Path(__file__).parents[1] / "examples" / "assignment-hashes.json"

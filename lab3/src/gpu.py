@@ -204,7 +204,7 @@ class GpuHasher:
                 buf.release()
 
 
-def search_gpu(target, config, wordlist=None, batch_size=16, device_index=0, on_progress=None, wordlist_total=None):
+def search_gpu(target, config, wordlist=None, batch_size=16, device_index=0, on_progress=None):
     if not 1 <= batch_size <= 4096:
         raise ValueError('GPU batch size must be 1..4096')
     config.validate()
@@ -220,12 +220,7 @@ def search_gpu(target, config, wordlist=None, batch_size=16, device_index=0, on_
     if wordlist is None:
         candidates = (candidate.encode('utf-8') for candidate in iter_candidates(config))
     else:
-        if wordlist_total is None:
-            total = inspect_wordlist(wordlist)['lines']
-        else:
-            if wordlist_total < 1 or not wordlist.is_file() or wordlist.stat().st_size > 256 * 1024 * 1024:
-                raise ValueError('Invalid prevalidated dictionary metadata')
-            total = wordlist_total
+        total = inspect_wordlist(wordlist)['lines']
         file_handle = wordlist.open('rb')
         candidates = (line.removesuffix(b'\n').removesuffix(b'\r') for line in file_handle)
     checked = rejected = 0

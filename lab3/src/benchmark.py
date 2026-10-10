@@ -11,7 +11,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from .cpu import crack
-from .hashcat import compare_hashcat
 from .hashes import HashTarget
 from .models import CrackConfig
 
@@ -27,11 +26,9 @@ def make_target(algorithm, password):
     return HashTarget.parse(hash_secret(raw, b'saltsalt', 3, 65536, 2, 32, Type.ID).decode())
 
 
-def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, backend='threads', worker_counts=None, hashcat_device='auto'):
+def run(repeats=3, smoke=False, backend='threads', worker_counts=None):
     if not 1 <= repeats <= 20:
         raise ValueError('repeats must be 1..20')
-    if hashcat_device not in ('auto', 'cpu', 'gpu'):
-        raise ValueError('hashcat device must be auto, cpu or gpu')
     CrackConfig('abc', 1, 1, backend=backend).validate()
     if worker_counts is not None:
         if not worker_counts or len(set(worker_counts)) != len(worker_counts):
@@ -45,7 +42,6 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, bac
     if smoke:
         scenarios = scenarios[:1]
     rows = []
-    professional = []
     for scenario, alphabet, length, password in scenarios:
         for algorithm in ('md5', 'sha1', 'bcrypt', 'argon2id'):
             target = make_target(algorithm, password)
@@ -65,12 +61,6 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, bac
                                      workers=workers, backend=backend, repeat=repeat, elapsed_seconds=result.elapsed_seconds,
                                      attempts=result.candidates_checked,
                                      attempts_per_second=result.candidates_checked / result.elapsed_seconds))
-            if include_hashcat and scenario in ('base', 'length2'):
-                for repeat in range(1, repeats + 1):
-                    measured = compare_hashcat(target, CrackConfig(alphabet, length, length), executable, hashcat_device)
-                    professional.append(dict(scenario=scenario, algorithm=algorithm, repeat=repeat,
-                                             target_hash=target.encoded, total_search_space=len(alphabet) ** length,
-                                             alphabet=alphabet, password_length=length, **measured))
             print(f'{scenario}: {algorithm} complete', file=sys.stderr, flush=True)
     if not smoke:
         for algorithm in ('md5', 'sha1'):
@@ -90,62 +80,7 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, bac
                                          attempts_per_second=result.candidates_checked / result.elapsed_seconds))
     return dict(created_utc=datetime.now(timezone.utc).isoformat(), python=sys.version,
                 platform=platform.platform(), processor=platform.processor(), logical_processors=os.cpu_count(),
-                repeats=repeats, backend=backend, hashcat_device=hashcat_device, results=rows, professional=professional)
-
-
-def speed_summary(report):
-    """Compare complete search times and clearly label end-to-end task rates."""
-    lines = ['', '## Сравнение времени поиска пароля', '',
-             'Одинаковое задание: проверить варианты a, b, c и найти пароль c. '
-             'В таблице медианное время успешных запусков. Меньше время — быстрее выполнено это задание. '
-             'У приложения учтены создание воркеров и поиск; у hashcat — запуск, подготовка вычислительного устройства и поиск.', '',
-             '| Алгоритм | Вариантов пароля в наборе | Моё приложение: время, с | Hashcat: время, с |',
-             '| --- | ---: | ---: | ---: |']
-    rates = ['', '## Скорость выполнения задания с учётом запуска', '',
-             'Здесь скорость = число вариантов пароля в наборе ÷ полное время выполнения. '
-             'Для обоих инструментов используется одна формула. Это показывает, '
-             'сколько кандидатов приходится на секунду общего времени, включая подготовку инструмента.', '',
-             '| Алгоритм | Моё приложение: кандидатов/с | Hashcat: кандидатов/с |',
-             '| --- | ---: | ---: |']
-    conditions = []
-    for algorithm in ('md5', 'sha1', 'bcrypt', 'argon2id'):
-        own = [row for row in report['results'] if row['scenario'] == 'base' and row['algorithm'] == algorithm]
-        if not own:
-            continue
-        workers = min(row['workers'] for row in own)
-        own = [row for row in own if row['workers'] == workers]
-        total = own[0]['total_search_space']
-        target = own[0]['target_hash']
-        external = [row for row in report.get('professional', [])
-                    if row['scenario'] == 'base' and row['algorithm'] == algorithm
-                    and row.get('supported') and row.get('cracked')
-                    and row.get('elapsed_seconds', 0) > 0
-                    and row.get('target_hash', target) == target
-                    and row.get('total_search_space', total) == total]
-        own_seconds = statistics.median(row['elapsed_seconds'] for row in own)
-        own_rate = statistics.median(total / row['elapsed_seconds'] for row in own)
-        seconds = f"{statistics.median(row['elapsed_seconds'] for row in external):.6f}" if external else 'нет замера'
-        rate = f"{statistics.median(total / row['elapsed_seconds'] for row in external):.3f}" if external else 'нет замера'
-        label = {'md5': 'MD5', 'sha1': 'SHA-1', 'bcrypt': 'bcrypt', 'argon2id': 'Argon2id'}[algorithm]
-        lines.append(f"| {label} | {total} | {own_seconds:.6f} | {seconds} |")
-        rates.append(f"| {label} | {own_rate:.2f} | {rate} |")
-        mode = 'потоки' if report.get('backend', 'threads') == 'threads' else 'процессы'
-        conditions.append((mode, workers, len(own), len(external), label))
-    if conditions and len({row[:4] for row in conditions}) == 1:
-        mode, workers, own_runs, external_runs, _ = conditions[0]
-        description = (f"Режим приложения: {mode}; воркеров: {workers}. Для каждого алгоритма "
-                       f"запусков приложения: {own_runs}; запусков hashcat: {external_runs}.")
-    else:
-        description = '; '.join(f"{label}: {mode}, воркеров {workers}; запусков приложения {own_runs}, hashcat {external_runs}"
-                                for mode, workers, own_runs, external_runs, label in conditions) + '.'
-    lines += ['', description, *rates, '',
-              'Это эффективная скорость короткого задания, а не скорость устройства во время самого перебора. '
-              'На трёх кандидатах большую часть времени hashcat занимает подготовка. '
-              'Например, для MD5: 3 варианта ÷ полное время hashcat. '
-              'Из этой таблицы нельзя сделать вывод о скорости инструментов на большом наборе.', '',
-              'bcrypt: cost=10. Argon2id: m=65536 KiB, t=3, p=2. '
-              '«Нет замера» означает отсутствие успешного сопоставимого запуска.', '']
-    return lines
+                repeats=repeats, backend=backend, results=rows)
 
 
 def save(report, output):
@@ -187,26 +122,12 @@ def save(report, output):
               'length2 → alphabet4: 9 → 16; position_first отличается от length2 только позицией (1 вместо 9). '
               'Для фиксированной длины пространство равно A**L, для диапазона длин — сумме A**L. '
               'При ранней находке время зависит от позиции, а не только от длины. '
-              'Сравнение workers=1/2 использует реальные попытки: потоки могут закончить уже начатые проверки.', '',
-              '## Сравнение с hashcat', '',
-              'Одинаковый полный набор кандидатов передаётся как wordlist. Внешнее время включает запуск процесса, '
-              'инициализацию устройства и компиляцию kernels; оно не равно скорости устройства во время самого перебора. '
-              'Нулевые/отсутствующие измерения не заменяются выдуманными числами.']
-    lines += speed_summary(report)
-    # Detailed external runs are retained for reproducibility below the summary.
-    lines += ['', '### Отдельные прогоны hashcat', '',
-              '| Scenario | Algorithm | Run | Supported | Cracked | Wall seconds |',
-              '| --- | --- | ---: | --- | --- | ---: |']
-    for r in report['professional']:
-        lines.append(f"| {r['scenario']} | {r['algorithm']} | {r['repeat']} | {r.get('supported', False)} | "
-                     f"{r.get('cracked', False)} | {r.get('elapsed_seconds')} |")
-    if not report['professional']:
-        lines.append('Профессиональное сравнение в этом запуске не выполнялось.')
+              'Сравнение workers=1/2 использует реальные попытки: потоки могут закончить уже начатые проверки.']
     lines += ['', '## Ограничения эксперимента', '',
               'Это ограниченный CPU/Python эксперимент, не оценка стойкости реальных учётных записей. '
               'Windows power policy, фоновые процессы, GIL и KDF internal threads влияют на результат. '
               'Большие неизвестные hard/very-hard хэши не взламывались. '
-              'Из микросценария нельзя выводить пиковую скорость hashcat. Сравниваются wall times конкретного набора.', '',
+              'Сравниваются времена поиска конкретного набора кандидатов.', '',
               '## Вывод', '',
               'Увеличение алфавита/длины растит число проверок, а KDF увеличивает цену каждой проверки. '
               'Вывод об ускорении потоками делайте по медианам одного scenario: overhead может перевесить параллелизм.', '']
@@ -216,16 +137,13 @@ def save(report, output):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repeats', type=int, default=3)
-    parser.add_argument('--hashcat', action='store_true')
-    parser.add_argument('--hashcat-path', default='hashcat')
-    parser.add_argument('--hashcat-device', choices=('auto', 'cpu', 'gpu'), default='auto')
     parser.add_argument('--smoke', action='store_true')
     parser.add_argument('--backend', choices=('threads', 'processes'), default='threads')
     parser.add_argument('--workers', nargs='+', type=int, help='Числа воркеров для сравнения, например 1 2 4')
-    parser.add_argument('--output', type=Path, default=Path('benchmarks'))
+    parser.add_argument('--output', type=Path, default=Path('artifacts/cpu-benchmark'))
     args = parser.parse_args(argv)
     try:
-        report = run(args.repeats, args.hashcat, args.hashcat_path, args.smoke, args.backend, args.workers, args.hashcat_device)
+        report = run(args.repeats, args.smoke, args.backend, args.workers)
         save(report, args.output)
         print(f'Saved {len(report["results"])} measurements to {args.output}')
         return 0

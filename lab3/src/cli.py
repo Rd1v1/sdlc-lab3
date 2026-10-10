@@ -3,12 +3,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 from dataclasses import asdict
 from pathlib import Path
 from .cpu import crack
-from .hashcat import compare_hashcat
 from .hashes import HashTarget, TargetError
 from .models import CrackConfig
 from .progress import CliProgress
@@ -28,14 +26,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--backend", choices=("threads", "processes", "gpu"), default="threads")
     parser.add_argument("--gpu-batch-size", type=int, default=16, help="Число GPU-кандидатов в пакете")
     parser.add_argument("--gpu-device", type=int, default=0, help="Индекс GPU OpenCL, начиная с 0")
-    parser.add_argument("--gpu-wordlist-lines", type=int, help=argparse.SUPPRESS)
     parser.add_argument("--interactive", action="store_true", help="Запросить режим и число воркеров")
     progress = parser.add_mutually_exclusive_group()
     progress.add_argument("--progress", dest="progress", action="store_true", help="Показать кандидатов воркеров в stderr")
     progress.add_argument("--no-progress", dest="progress", action="store_false", help="Отключить таблицу воркеров")
     parser.set_defaults(progress=None)
-    parser.add_argument("--compare-hashcat", action="store_true")
-    parser.add_argument("--hashcat-device", choices=('auto', 'cpu', 'gpu'), default='auto')
     return parser
 
 
@@ -69,7 +64,7 @@ def run(arguments: list[str] | None = None) -> int:
                     for row in rows:
                         print(f'GPU worker {row.worker}: {json.dumps(row.candidate, ensure_ascii=True)} [{row.status}]', file=sys.stderr)
             result = search_gpu(target, config, options.wordlist, options.gpu_batch_size, options.gpu_device,
-                                gpu_progress if enabled else None, options.gpu_wordlist_lines)
+                                gpu_progress if enabled else None)
         elif options.wordlist:
             if config.workers != 1 or config.backend != 'threads' or config.prefix:
                 raise ValueError('Словарь использует один поток без префикса: --workers 1 --backend threads')
@@ -79,15 +74,12 @@ def run(arguments: list[str] | None = None) -> int:
         else:
             result = crack(target, config, on_progress=CliProgress(config) if enabled else None)
         report: dict[str, object] = {"algorithm": target.algorithm, **(result if isinstance(result, dict) else asdict(result))}
-        if options.compare_hashcat:
-            report["hashcat"] = compare_hashcat(target, config, device_type=options.hashcat_device,
-                                                attack='wordlist' if options.wordlist else 'mask', wordlist=options.wordlist)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0 if report['found'] else 1
     except (KeyboardInterrupt, EOFError):
         print("Перебор прерван", file=sys.stderr)
         return 130
-    except (TargetError, ValueError, RuntimeError, OSError, subprocess.TimeoutExpired) as error:
+    except (TargetError, ValueError, RuntimeError, OSError) as error:
         print(f"Ошибка: {error}", file=sys.stderr)
         return 2
 
