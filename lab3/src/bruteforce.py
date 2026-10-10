@@ -59,10 +59,10 @@ class HashTarget:
             return cls("argon2id", value)
         raise TargetError("Поддерживаются только MD5, SHA-1, bcrypt и Argon2id")
 
-    def matches(self, candidate: str) -> bool:
+    def matches(self, candidate: str | bytes) -> bool:
         if self.algorithm not in ('md5', 'sha1', 'bcrypt', 'argon2id'):
             raise TargetError("Неподдерживаемый алгоритм")
-        raw = candidate.encode("utf-8")
+        raw = candidate.encode("utf-8") if isinstance(candidate, str) else candidate
         if self.algorithm == "md5":
             return hashlib.md5(raw, usedforsecurity=False).hexdigest() == self.encoded
         if self.algorithm == "sha1":
@@ -96,6 +96,7 @@ class CrackConfig:
     candidate_limit: int = 2_000_000
     workers: int = 1
     backend: str = "threads"
+    prefix: str = ""
 
     def validate(self) -> int:
         if not self.alphabet or len(self.alphabet) > 128 or len(set(self.alphabet)) != len(self.alphabet):
@@ -112,6 +113,8 @@ class CrackConfig:
             raise ValueError("На Windows допускается не более 61 процесса")
         if any(ord(character) < 32 or ord(character) == 127 for character in self.alphabet):
             raise ValueError("Управляющие символы в алфавите запрещены")
+        if len(self.prefix) > 64 or any(ord(character) < 32 or ord(character) == 127 for character in self.prefix):
+            raise ValueError("Префикс: максимум 64 символа без управляющих символов")
         count = sum(len(self.alphabet) ** length for length in range(self.min_length, self.max_length + 1))
         if count > self.candidate_limit:
             raise ValueError(f"Диапазон содержит {count:,} кандидатов, лимит: {self.candidate_limit:,}")
@@ -127,6 +130,7 @@ class CrackResult:
     total_candidates: int
     workers: int
     backend: str = "threads"
+    password_hex: str | None = None
 
 
 def candidate_at(index: int, alphabet: str, length: int) -> str:
@@ -144,7 +148,7 @@ def iter_candidates(config: CrackConfig) -> Iterator[str]:
     config.validate()
     for length in range(config.min_length, config.max_length + 1):
         for index in range(len(config.alphabet) ** length):
-            yield candidate_at(index, config.alphabet, length)
+            yield config.prefix + candidate_at(index, config.alphabet, length)
 
 
 @dataclass(frozen=True)
@@ -163,7 +167,7 @@ def _candidate_global(index: int, config: CrackConfig) -> str:
     for length in range(config.min_length, config.max_length + 1):
         count = len(config.alphabet) ** length
         if index < count:
-            return candidate_at(index, config.alphabet, length)
+            return config.prefix + candidate_at(index, config.alphabet, length)
         index -= count
     raise ValueError("Индекс вне пространства перебора")
 
@@ -288,10 +292,10 @@ def crack(target: HashTarget, config: CrackConfig,
 
 class CliProgress:
     """Render sampled worker state on stderr, leaving stdout as machine-readable JSON."""
-    def __init__(self, config: CrackConfig, stream=None):
+    def __init__(self, config: CrackConfig, stream=None, total_candidates=None):
         self.config = config
         self.stream = sys.stderr if stream is None else stream
-        self.total = config.validate()
+        self.total = config.validate() if total_candidates is None else max(1, total_candidates)
         self.started = time.perf_counter()
         self.last_render = 0.0
         self.previous = None
@@ -338,9 +342,82 @@ class CliProgress:
 HASHCAT_MODES = {"md5": "0", "sha1": "100", "bcrypt": "3200", "argon2id": "34000"}
 
 
-def compare_hashcat(target: HashTarget, config: CrackConfig, executable: str = "hashcat", device_type: str = "auto") -> dict[str, object]:
+def inspect_wordlist(path: Path) -> dict[str, object]:
+    path = path.resolve(strict=True)
+    if not path.is_file() or path.stat().st_size > 256 * 1024 * 1024:
+        raise ValueError('Словарь должен быть файлом размером не более 256 МиБ')
+    digest = hashlib.sha256()
+    lines = 0
+    last = b''
+    with path.open('rb') as stream:
+        while block := stream.read(1024 * 1024):
+            digest.update(block)
+            lines += block.count(b'\n')
+            last = block[-1:]
+    if last and last != b'\n':
+        lines += 1
+    return {'sha256': digest.hexdigest(), 'bytes': path.stat().st_size, 'lines': lines}
+
+
+def crack_wordlist(target: HashTarget, path: Path, on_progress=None, metadata=None) -> CrackResult:
+    """Stream raw password bytes in file order using one stoppable worker thread."""
+    parsed = HashTarget.parse(target.encoded)
+    if parsed.algorithm != target.algorithm:
+        raise TargetError('Алгоритм не соответствует хэшу')
+    target = parsed
+    path = path.resolve(strict=True)
+    info = inspect_wordlist(path) if metadata is None else metadata
+    stopped = threading.Event()
+    started = time.perf_counter()
+
+    def search():
+        checked = 0
+        candidate = None
+        next_update = 0.0
+        status = 'done'
+        try:
+            with path.open('rb') as stream:
+                for line in stream:
+                    if stopped.is_set():
+                        status = 'stopped'
+                        break
+                    raw = line.removesuffix(b'\n').removesuffix(b'\r')
+                    candidate = raw.decode('utf-8', errors='backslashreplace')
+                    if on_progress and time.monotonic() >= next_update:
+                        on_progress((WorkerProgress(1, candidate, checked, 'running'),))
+                        next_update = time.monotonic() + 0.1
+                    matched = target.matches(raw)
+                    checked += 1
+                    if matched:
+                        status = 'found'
+                        return CrackResult(True, candidate, time.perf_counter() - started,
+                                           checked, info['lines'], 1, 'threads', raw.hex())
+            return CrackResult(False, None, time.perf_counter() - started, checked, info['lines'], 1, 'threads')
+        except BaseException:
+            status = 'error'
+            raise
+        finally:
+            if on_progress:
+                on_progress((WorkerProgress(1, candidate, checked, status),))
+
+    executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='dictionary-check')
+    try:
+        return executor.submit(search).result()
+    finally:
+        stopped.set()
+        executor.shutdown(wait=True, cancel_futures=True)
+
+
+def compare_hashcat(target: HashTarget, config: CrackConfig, executable: str = "hashcat", device_type: str = "auto",
+                    attack: str = 'generated-wordlist', wordlist: Path | None = None) -> dict[str, object]:
     if device_type not in ('auto', 'cpu', 'gpu'):
         raise ValueError('hashcat device must be auto, cpu or gpu')
+    if attack not in ('generated-wordlist', 'mask', 'wordlist'):
+        raise ValueError('Unknown hashcat attack')
+    if attack == 'wordlist' and wordlist is None:
+        raise ValueError('Dictionary attack requires a wordlist')
+    if attack == 'mask' and (config.min_length != config.max_length or not (config.alphabet + config.prefix).isascii()):
+        raise ValueError('Hashcat mask comparison requires a fixed length and ASCII charset/prefix')
     binary = shutil.which(executable)
     if binary is None:
         return {"available": False, "reason": "hashcat is not installed", "elapsed_seconds": None}
@@ -353,12 +430,17 @@ def compare_hashcat(target: HashTarget, config: CrackConfig, executable: str = "
     scratch.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="lab3-hashcat-", dir=scratch) as directory:
         target_file = Path(directory) / "target.hash"
-        wordlist = Path(directory) / "candidates.txt"
+        input_file = Path(directory) / "candidates.txt"
         cracked_file = Path(directory) / "cracked.txt"
         target_file.write_text(target.encoded + "\n", encoding="ascii")
-        with wordlist.open("w", encoding="utf-8", newline="\n") as output:
-            for candidate in iter_candidates(config):
-                output.write(candidate + "\n")
+        if attack == 'generated-wordlist':
+            with input_file.open("w", encoding="utf-8", newline="\n") as output:
+                for candidate in iter_candidates(config):
+                    output.write(candidate + "\n")
+        elif attack == 'wordlist':
+            input_file = wordlist.resolve(strict=True)
+            inspect_wordlist(input_file)
+        mask = config.prefix.replace('?', '??') + '?1' * config.max_length
         command = [
             binary,
             "--quiet",
@@ -368,10 +450,14 @@ def compare_hashcat(target: HashTarget, config: CrackConfig, executable: str = "
             "--outfile", str(cracked_file),
             "--outfile-format", "2",
             "-m", mode,
-            "-a", "0",
+            "-a", "3" if attack == 'mask' else "0",
             str(target_file),
-            str(wordlist),
+            mask if attack == 'mask' else str(input_file),
         ]
+        if attack == 'mask':
+            command[1:1] = ['-1', config.alphabet, '--markov-disable']
+        elif attack == 'wordlist':
+            command[1:1] = ['--wordlist-autohex-disable', '--outfile-autohex-disable']
         device_args = []
         if device_type == 'cpu':
             device_args = ['--backend-ignore-cuda', '--backend-ignore-hip', '-D', '1']
@@ -392,7 +478,9 @@ def compare_hashcat(target: HashTarget, config: CrackConfig, executable: str = "
             "cracked": cracked_file.exists() and any(target.matches(line) for line in cracked_file.read_text(encoding='utf-8').splitlines()),
             "elapsed_seconds": elapsed,
             "device_type": device_type,
-            "command": f"hashcat {' '.join(device_args)} --potfile-disable --restore-disable --logfile-disable -m {mode} -a 0 target.hash candidates.txt",
+            "attack": attack,
+            "command": f"hashcat {' '.join(device_args)} --potfile-disable --restore-disable --logfile-disable -m {mode} -a "
+                       + ('3 -1 '+config.alphabet+' --markov-disable target.hash '+mask if attack == 'mask' else '0 target.hash '+('rockyou.txt' if attack == 'wordlist' else 'candidates.txt')),
         }
 
 
@@ -400,6 +488,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Учебный локальный перебор тестовых хэшей")
     parser.add_argument("target", help="Локальный тестовый hash string")
     parser.add_argument("--alphabet", default="0123456789")
+    parser.add_argument("--prefix", default="", help="Известный префикс; длины относятся к перебираемой части")
+    parser.add_argument("--wordlist", type=Path, help="Поиск по словарю вместо генерации кандидатов (один поток)")
     parser.add_argument("--min-length", type=int, default=1)
     parser.add_argument("--max-length", type=int, default=6)
     parser.add_argument("--candidate-limit", type=int, default=2_000_000)
@@ -426,12 +516,20 @@ def run(arguments: list[str] | None = None) -> int:
             print("Число воркеров [1]: ", end="", file=sys.stderr, flush=True)
             options.workers = int(input().strip() or "1")
         config = CrackConfig(options.alphabet, options.min_length, options.max_length,
-                             options.candidate_limit, options.workers, options.backend)
+                             options.candidate_limit, options.workers, options.backend, options.prefix)
         enabled = sys.stderr.isatty() if options.progress is None else options.progress
-        result = crack(target, config, on_progress=CliProgress(config) if enabled else None)
+        if options.wordlist:
+            if config.workers != 1 or config.backend != 'threads' or config.prefix:
+                raise ValueError('Словарь использует один поток без префикса: --workers 1 --backend threads')
+            info = inspect_wordlist(options.wordlist)
+            result = crack_wordlist(target, options.wordlist, metadata=info,
+                                    on_progress=CliProgress(config, total_candidates=info['lines']) if enabled else None)
+        else:
+            result = crack(target, config, on_progress=CliProgress(config) if enabled else None)
         report: dict[str, object] = {"algorithm": target.algorithm, **asdict(result)}
         if options.compare_hashcat:
-            report["hashcat"] = compare_hashcat(target, config, device_type=options.hashcat_device)
+            report["hashcat"] = compare_hashcat(target, config, device_type=options.hashcat_device,
+                                                attack='wordlist' if options.wordlist else 'mask', wordlist=options.wordlist)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0 if result.found else 1
     except (KeyboardInterrupt, EOFError):

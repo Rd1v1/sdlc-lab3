@@ -6,4 +6,4 @@ COPY requirements.txt /app/requirements.txt
 RUN python -m venv /app/.venv && /app/.venv/bin/python -m pip install --no-cache-dir -r /app/requirements.txt
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUTF8=1 PYTHONDONTWRITEBYTECODE=1 \
     POCL_MAX_PTHREAD_COUNT=1 POCL_CACHE_DIR=/work/.cache/pocl-cpu XDG_CACHE_HOME=/work/.cache/hashcat-cpu
-CMD ["python", "-m", "lab3.src.benchmark", "--smoke", "--repeats", "3", "--backend", "threads", "--workers", "1", "--hashcat", "--hashcat-device", "cpu", "--hashcat-path", ".tools/hashcat/hashcat-7.1.2/hashcat.bin", "--output", "artifacts/cpu-summary"]
+CMD ["python", "-m", "lab3.src.cpu_benchmark", "--repeats", "3", "--comparison", "dictionary"]
