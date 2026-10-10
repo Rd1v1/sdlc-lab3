@@ -44,7 +44,7 @@ class RegressionTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(run(args), 1)
             self.assertEqual(run(['invalid']), 2)
-            with patch('lab3.src.bruteforce.crack', side_effect=KeyboardInterrupt):
+            with patch('lab3.src.cli.crack', side_effect=KeyboardInterrupt):
                 self.assertEqual(run(args), 130)
 
 

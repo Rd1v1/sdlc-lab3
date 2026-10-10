@@ -9,7 +9,10 @@ import re
 import tempfile
 import time
 
-from .bruteforce import CrackConfig, HashTarget, WorkerProgress, inspect_wordlist, iter_candidates
+from .candidates import iter_candidates
+from .hashes import HashTarget
+from .models import CrackConfig, WorkerProgress
+from .wordlist import inspect_wordlist
 
 
 ROOT = Path(__file__).resolve().parents[2]

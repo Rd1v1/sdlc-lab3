@@ -13,7 +13,9 @@ import sys
 import time
 
 from .benchmark import make_target
-from .bruteforce import CrackConfig, compare_hashcat, inspect_wordlist
+from .hashcat import compare_hashcat
+from .models import CrackConfig
+from .wordlist import inspect_wordlist
 
 
 def run(repeats, binary, wordlist, device_type='gpu'):

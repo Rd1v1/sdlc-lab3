@@ -1,7 +1,7 @@
 """Simple interactive entry point; command-line arguments remain available."""
 import sys
 
-from lab3.src.bruteforce import run
+from lab3.src.cli import run
 
 
 def ask(label, default):

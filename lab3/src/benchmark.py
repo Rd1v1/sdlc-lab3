@@ -10,7 +10,10 @@ import statistics
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from .bruteforce import CrackConfig, HashTarget, crack, compare_hashcat
+from .cpu import crack
+from .hashcat import compare_hashcat
+from .hashes import HashTarget
+from .models import CrackConfig
 
 
 def make_target(algorithm, password):
