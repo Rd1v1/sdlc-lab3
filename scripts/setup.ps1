@@ -1,4 +1,3 @@
-param([switch]$Dev)
 $ErrorActionPreference = 'Stop'
 $env:PYTHONUTF8 = '1'
 $repo = Split-Path -Parent $PSScriptRoot
@@ -13,8 +12,4 @@ if (-not (Test-Path -LiteralPath $python)) {
 if ($LASTEXITCODE -ne 0) { throw 'Invalid local virtual environment' }
 & $python -m pip install --disable-pip-version-check --cache-dir .cache/pip -r requirements.txt
 if ($LASTEXITCODE -ne 0) { throw 'Local dependency restore failed' }
-if ($Dev) {
-    & $python -m pip install --disable-pip-version-check --cache-dir .cache/pip -r requirements-dev.txt
-    if ($LASTEXITCODE -ne 0) { throw 'Local dev dependency restore failed' }
-}
 Write-Output 'Ready. All Python packages are inside .venv.'

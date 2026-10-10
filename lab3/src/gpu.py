@@ -64,7 +64,7 @@ class GpuHasher:
             import numpy as np
             import pyopencl as cl
         except ImportError as error:
-            raise RuntimeError('Установите requirements-gpu.txt в проектную .venv') from error
+            raise RuntimeError('Установите requirements.txt в проектную .venv') from error
         parsed = HashTarget.parse(target.encoded)
         if parsed.algorithm != target.algorithm:
             raise ValueError('Алгоритм не соответствует хэшу')

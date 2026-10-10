@@ -1,15 +1,6 @@
 .venv/
 __pycache__/
 *.py[cod]
-lab1-data/
-*.sqlite3
-*.db
-*.local.json
-.pytest_cache/
-.coverage
-htmlcov/
-dist/
-build/
 .cache/
 .tools/
 .tmp/
@@ -18,5 +9,3 @@ artifacts/
 .secrets
 .idea/
 .vscode/
-.state/
-repositories/

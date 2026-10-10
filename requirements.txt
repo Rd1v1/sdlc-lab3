@@ -3,3 +3,9 @@ argon2-cffi==25.1.0
 argon2-cffi-bindings==26.1.0
 cffi==2.1.1
 pycparser==3.0
+pyopencl==2026.1.4
+numpy==2.5.3
+platformdirs==4.12.4
+pytools==2026.1.1
+typing_extensions==4.16.0
+siphash24==1.9

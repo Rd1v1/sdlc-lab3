@@ -1,9 +1,0 @@
-# Dev/CI only; install exclusively with project .venv interpreter.
-bandit==1.8.6
-PyYAML==6.0.2
-stevedore==5.5.0
-rich==14.1.0
-markdown-it-py==4.0.0
-mdurl==0.1.2
-Pygments==2.19.2
-colorama==0.4.6; sys_platform == 'win32'

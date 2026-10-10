@@ -489,7 +489,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("target", help="Локальный тестовый hash string")
     parser.add_argument("--alphabet", default="0123456789")
     parser.add_argument("--prefix", default="", help="Известный префикс; длины относятся к перебираемой части")
-    parser.add_argument("--wordlist", type=Path, help="Поиск по словарю вместо генерации кандидатов (один поток)")
+    parser.add_argument("--wordlist", type=Path, help="Поиск по словарю; GPU или один CPU-поток")
     parser.add_argument("--min-length", type=int, default=1)
     parser.add_argument("--max-length", type=int, default=6)
     parser.add_argument("--candidate-limit", type=int, default=2_000_000)
