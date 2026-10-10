@@ -7,7 +7,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from lab3.src.bruteforce import CrackConfig, HashTarget, TargetError, candidate_at, crack
+from lab3.src.models import CrackConfig
+from lab3.src.hashes import HashTarget, TargetError
+from lab3.src.candidates import candidate_at, iter_candidates
+from lab3.src.cpu import crack
 
 
 class BruteForceTests(unittest.TestCase):
@@ -19,7 +22,7 @@ class BruteForceTests(unittest.TestCase):
 
     def test_candidate_generation_has_expected_order(self):
         config = CrackConfig("01", 1, 2, candidate_limit=6)
-        self.assertEqual(list(__import__("lab3.src.bruteforce", fromlist=["iter_candidates"]).iter_candidates(config)), ["0", "1", "00", "01", "10", "11"])
+        self.assertEqual(list(iter_candidates(config)), ["0", "1", "00", "01", "10", "11"])
         self.assertEqual(candidate_at(5, "012", 2), "12")
 
     def test_bounded_success_and_not_found(self):

@@ -12,7 +12,11 @@ import time
 import unittest
 from unittest.mock import patch
 
-from lab3.src.bruteforce import CliProgress, CrackConfig, HashTarget, TargetError, crack, run
+from lab3.src.progress import CliProgress
+from lab3.src.models import CrackConfig
+from lab3.src.hashes import HashTarget, TargetError
+from lab3.src.cpu import crack
+from lab3.src.cli import run
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,7 +42,7 @@ class WorkerTests(unittest.TestCase):
                         self.assertLessEqual(result.candidates_checked, result.total_candidates)
 
     def test_exhaustion_and_exact_worker_partition(self):
-        from lab3.src.bruteforce import iter_candidates
+        from lab3.src.candidates import iter_candidates
         candidates = list(iter_candidates(CrackConfig('abc', 1, 3)))
         target = HashTarget.parse(hashlib.sha1(b'outside', usedforsecurity=False).hexdigest())
         for backend in ('threads', 'processes'):
@@ -117,7 +121,7 @@ class WorkerTests(unittest.TestCase):
 
     def test_cli_process_progress_keeps_stdout_json(self):
         target = hashlib.md5(b'ba', usedforsecurity=False).hexdigest()
-        process = subprocess.run([sys.executable, '-m', 'lab3.src.bruteforce', target,
+        process = subprocess.run([sys.executable, str(ROOT / 'main.py'), target,
                                   '--alphabet', 'ab', '--max-length', '2', '--workers', '2',
                                   '--backend', 'processes', '--progress'], cwd=ROOT,
                                  capture_output=True, text=True, encoding='utf-8', timeout=30,
@@ -142,7 +146,7 @@ class WorkerTests(unittest.TestCase):
         import bcrypt
         import signal
         target = bcrypt.hashpw(b'outside', bcrypt.gensalt(rounds=8)).decode()
-        process = subprocess.Popen([sys.executable, '-m', 'lab3.src.bruteforce', target,
+        process = subprocess.Popen([sys.executable, str(ROOT / 'main.py'), target,
                                     '--alphabet', 'abcd', '--min-length', '6', '--max-length', '6',
                                     '--workers', '2', '--backend', 'processes', '--progress'],
                                    cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -160,7 +164,7 @@ class WorkerTests(unittest.TestCase):
                 process.communicate()
 
     def test_renderer_terminal_and_safe_unicode(self):
-        from lab3.src.bruteforce import WorkerProgress
+        from lab3.src.models import WorkerProgress
         stream = io.StringIO()
         renderer = CliProgress(CrackConfig('я', 1, 1), stream=stream)
         renderer.ansi = True

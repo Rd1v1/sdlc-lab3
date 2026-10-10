@@ -7,7 +7,12 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from lab3.src.bruteforce import CrackConfig, HashTarget, TargetError, crack, crack_wordlist, inspect_wordlist, iter_candidates, run
+from lab3.src.models import CrackConfig
+from lab3.src.hashes import HashTarget, TargetError
+from lab3.src.cpu import crack
+from lab3.src.wordlist import crack_wordlist, inspect_wordlist
+from lab3.src.candidates import iter_candidates
+from lab3.src.cli import run
 
 
 class DictionaryTests(unittest.TestCase):

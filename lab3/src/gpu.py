@@ -2,7 +2,6 @@
 from __future__ import annotations
 import base64
 import itertools
-import json
 import os
 from pathlib import Path
 import re
@@ -11,7 +10,7 @@ import time
 
 from .candidates import iter_candidates
 from .hashes import HashTarget
-from .models import CrackConfig, WorkerProgress
+from .models import WorkerProgress
 from .wordlist import inspect_wordlist
 
 

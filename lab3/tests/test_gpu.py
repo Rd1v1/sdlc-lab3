@@ -7,7 +7,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from lab3.src.bruteforce import CrackConfig, HashTarget, run
+from lab3.src.models import CrackConfig
+from lab3.src.hashes import HashTarget
+from lab3.src.cli import run
 
 
 @unittest.skipUnless(os.environ.get('LAB3_GPU_TESTS') == '1', 'Set LAB3_GPU_TESTS=1 to execute real GPU tests')

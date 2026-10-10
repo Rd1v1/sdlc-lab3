@@ -4,7 +4,11 @@ import io
 import threading
 import unittest
 from unittest.mock import patch
-from lab3.src.bruteforce import CrackConfig, HashTarget, TargetError, candidate_at, crack, run
+from lab3.src.models import CrackConfig
+from lab3.src.hashes import HashTarget, TargetError
+from lab3.src.candidates import candidate_at
+from lab3.src.cpu import crack
+from lab3.src.cli import run
 
 
 class RegressionTests(unittest.TestCase):

@@ -56,18 +56,5 @@ $env:LAB3_GPU_TESTS = '1'
 | `wordlist.py` | Чтение словаря и CPU-поиск по нему |
 | `progress.py` | Таблица кандидатов CPU-воркеров |
 | `benchmark.py` | Замеры длины, алфавита и числа CPU-воркеров |
-| `bruteforce.py` | Совместимость с прежними импортами и командой запуска |
 
-Hashcat запускается отдельно. Скачайте архив с [официального сайта](https://hashcat.net/hashcat/) и распакуйте его так, чтобы файл находился в `.tools/hashcat/hashcat-7.1.2/hashcat.exe`. Установка hashcat не нужна для работы моего приложения.
-
-Пример отдельного GPU-поиска MD5 пароля `123456`, без словаря и с тем же RockYou:
-
-```powershell
-$wordlist = (Resolve-Path .tools/wordlists/rockyou.txt).Path
-Push-Location .tools/hashcat/hashcat-7.1.2
-./hashcat.exe --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 3 --markov-disable e10adc3949ba59abbe56e057f20f883e '12345?d'
-./hashcat.exe --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable --wordlist-autohex-disable -m 0 -a 0 e10adc3949ba59abbe56e057f20f883e $wordlist
-Pop-Location
-```
-
-Для других хэшей замените значение хэша и `-m`: MD5 — `0`, SHA-1 — `100`, bcrypt — `3200`, Argon2id — `34000`. Учебные хэши находятся в [assignment-hashes.json](lab3/examples/assignment-hashes.json). Для сравнения запустите моё приложение с `--backend gpu --no-progress` на том же хэше и наборе кандидатов. Для полного времени запуска используйте `Measure-Command`, направив вывод команды в `Out-Host`; выполните три последовательных запуска и возьмите медиану.
+Для отдельного сравнения скачайте [hashcat](https://hashcat.net/hashcat/). Команды запуска и условия замеров приведены в [REPORT.md](REPORT.md).
