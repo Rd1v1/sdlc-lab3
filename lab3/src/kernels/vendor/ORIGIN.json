@@ -1,0 +1,24 @@
+{
+  "project": "hashcat",
+  "version": "7.1.2",
+  "url": "https://github.com/hashcat/hashcat/tree/v7.1.2/OpenCL",
+  "license": "MIT",
+  "files": {
+    "inc_cipher_blowfish.cl": "4d59f9fa11913de69fcaededa03a9cca8c82af843722913e63cd3f8d357b0f4f",
+    "inc_cipher_blowfish.h": "8a22ad8b71482ff47cb3d1cab7b0a4a74507ac85746453f02f0a58731d954e3c",
+    "inc_common.cl": "a875d87d2f55bf9ea4740f983c710a732de41e1abc6550b7db78789226bb3b2a",
+    "inc_common.h": "946956a0e67532ff47303b9084f87fda00999aebe1933f3551ea529c2893d075",
+    "inc_hash_argon2.cl": "8af150a25898d96c9cbe7417e972c935484df38289c45561e561713056aa5935",
+    "inc_hash_argon2.h": "f817ce010ab7fd78cce976d23cec512ae1c17226d5373aee3129c271cde0b5c8",
+    "inc_hash_blake2b.cl": "d10f449f432b5af54ff3ba12dae6a0db2ff904e09e84e8e49722ccc9ee0475df",
+    "inc_hash_blake2b.h": "21aa2652fa1a5f116b187fbfb675495f11abe03db0f4a6d6903f12d093fa510b",
+    "inc_hash_md5.cl": "f819072ec62ff1c783f3f932e5c2532fc9b2c997fee3ab1e260a2bef99de9fff",
+    "inc_hash_md5.h": "d6b2886e64212d0a8b95188fb0bc2320cf58f34b7e1a760e45aa60db6c48bcd6",
+    "inc_hash_sha1.cl": "2dda421eb7878aabaaa40a8dedd8251c81c2c2d41cd89279410a96ea43cb1459",
+    "inc_hash_sha1.h": "b6db300c29a0bbd86458c484ce4ad4753c1c8a5cbecac30ef0c839a2bea8c2b0",
+    "inc_platform.cl": "66ce53598df655d5c5bfa80f15dc394734fff813c7a63e6db6c35ed1d6cdcea5",
+    "inc_platform.h": "b697548eaf6fbc5795b90e6ef55cbf2d58371d88896569981682d41d37684259",
+    "inc_types.h": "10c6052d6d36dc172aec8e4d0c9663b739448c4c9d586c56ffe1cc76db43e60f",
+    "inc_vendor.h": "17675b7d79591600a4b69492e26252df0837e461ac182ebcf0a41edacbb2a228"
+  }
+}

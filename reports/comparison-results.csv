@@ -1,25 +1,25 @@
-scenario,algorithm,repeat,target_hash,expected_password,total_search_space,attempts,workers,backend,elapsed_seconds
-mask,md5,1,e10adc3949ba59abbe56e057f20f883e,123456,10,7,1,threads,0.0005735479935538024
-mask,md5,2,e10adc3949ba59abbe56e057f20f883e,123456,10,7,1,threads,0.0009528350055916235
-mask,md5,3,e10adc3949ba59abbe56e057f20f883e,123456,10,7,1,threads,0.0006785669975215569
-rockyou,md5,1,e10adc3949ba59abbe56e057f20f883e,123456,14344391,1,1,threads,0.0026066520003951155
-rockyou,md5,2,e10adc3949ba59abbe56e057f20f883e,123456,14344391,1,1,threads,0.0034339709964115173
-rockyou,md5,3,e10adc3949ba59abbe56e057f20f883e,123456,14344391,1,1,threads,0.003832854999927804
-mask,sha1,1,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,10,7,1,threads,0.0004648950052796863
-mask,sha1,2,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,10,7,1,threads,0.0006564159994013608
-mask,sha1,3,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,10,7,1,threads,0.0005344929959392175
-rockyou,sha1,1,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,14344391,1,1,threads,0.002349531998333987
-rockyou,sha1,2,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,14344391,1,1,threads,0.002936539996881038
-rockyou,sha1,3,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,14344391,1,1,threads,0.0029451009977492504
-mask,bcrypt,1,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,10,7,1,threads,0.415210120001575
-mask,bcrypt,2,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,10,7,1,threads,0.41579010400164407
-mask,bcrypt,3,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,10,7,1,threads,0.44719757099665003
-rockyou,bcrypt,1,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,14344391,1,1,threads,0.06409976199938683
-rockyou,bcrypt,2,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,14344391,1,1,threads,0.062394657004915643
-rockyou,bcrypt,3,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,14344391,1,1,threads,0.06633367500035092
-mask,argon2id,1,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,10,7,1,threads,1.3187195160062402
-mask,argon2id,2,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,10,7,1,threads,1.211786713996844
-mask,argon2id,3,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,10,7,1,threads,1.207089465999161
-rockyou,argon2id,1,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,14344391,1,1,threads,0.1727697839960456
-rockyou,argon2id,2,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,14344391,1,1,threads,0.1669683609943604
-rockyou,argon2id,3,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,14344391,1,1,threads,0.174991202999081
+scenario,algorithm,repeat,target_hash,expected_password,total_search_space,attempts,workers,backend,elapsed_seconds,search_seconds,gpu_kernel_seconds,gpu_device,batch_size
+mask,md5,1,e10adc3949ba59abbe56e057f20f883e,123456,10,10,10,gpu,0.678121499993722,0.4045905999955721,4.8e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,md5,2,e10adc3949ba59abbe56e057f20f883e,123456,10,10,10,gpu,0.7678530999983195,0.45727260000421666,5.088e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,md5,3,e10adc3949ba59abbe56e057f20f883e,123456,10,10,10,gpu,0.6734279999946011,0.3832323000096949,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,md5,1,e10adc3949ba59abbe56e057f20f883e,123456,14344391,16,16,gpu,0.6993557000096189,0.41572599999199156,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,md5,2,e10adc3949ba59abbe56e057f20f883e,123456,14344391,16,16,gpu,0.6793706999887945,0.40175960000487976,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,md5,3,e10adc3949ba59abbe56e057f20f883e,123456,14344391,16,16,gpu,0.6717726999922888,0.3923374000005424,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,sha1,1,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,10,10,10,gpu,0.6656406999973115,0.38989269999729004,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,sha1,2,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,10,10,10,gpu,0.6604011000017636,0.3847765999962576,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,sha1,3,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,10,10,10,gpu,0.7401061999989906,0.4535957000043709,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,sha1,1,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,14344391,16,16,gpu,0.8633191000117222,0.49728399999730755,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,sha1,2,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,14344391,16,16,gpu,0.7528028000087943,0.4349616999970749,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,sha1,3,7c4a8d09ca3762af61e59520943dc26494f8941b,123456,14344391,16,16,gpu,0.9529785999911837,0.574257200001739,5.12e-06,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,bcrypt,1,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,10,10,10,gpu,1.2162161000014748,0.8994148000056157,0.494333952,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,bcrypt,2,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,10,10,10,gpu,1.1435064999968745,0.8647823000064818,0.478022528,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,bcrypt,3,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,10,10,10,gpu,1.5279642999958014,1.203008199998294,0.761495648,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,bcrypt,1,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,14344391,16,16,gpu,1.1864922999957344,0.8949588000104995,0.48621568,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,bcrypt,2,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,14344391,16,16,gpu,1.1635349999996834,0.8678583000000799,0.478894272,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,bcrypt,3,$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6,123456,14344391,16,16,gpu,1.3236962999944808,0.9620810999913374,0.484350208,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,argon2id,1,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,10,10,10,gpu,0.8283905999996932,0.5245216999901459,0.089419776,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,argon2id,2,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,10,10,10,gpu,0.9244343000027584,0.5422771999874385,0.082523136,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+mask,argon2id,3,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,10,10,10,gpu,0.859737299993867,0.5557331000018166,0.089043136,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,argon2id,1,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,14344391,16,16,gpu,0.8596072999935132,0.5512568999984069,0.09564704,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,argon2id,2,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,14344391,16,16,gpu,1.0073474000091664,0.6432188000035239,0.129526976,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16
+rockyou,argon2id,3,"$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",123456,14344391,16,16,gpu,1.0514071000070544,0.6828029000025708,0.128579584,"{'name': 'NVIDIA GeForce RTX 4070 SUPER', 'vendor': 'NVIDIA Corporation', 'driver': '591.86', 'type': 'GPU', 'platform': 'NVIDIA CUDA'}",16

@@ -1,9 +1,9 @@
 {
-  "created_utc": "2026-10-10T08:49:21.059747+00:00",
-  "python": "3.13.15 (main, Sep 19 2026, 01:05:27) [GCC 14.2.0]",
-  "platform": "Linux-6.18.40.1-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+  "created_utc": "2026-10-10T09:16:52.377635+00:00",
+  "python": "3.13.0 (tags/v3.13.0:60403a5, Oct  7 2024, 09:38:07) [MSC v.1941 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
   "repeats": 3,
-  "hashcat_device": "cpu",
+  "hashcat_device": "gpu",
   "password": "123456",
   "mask": "12345?d",
   "known_prefix": "12345",
@@ -23,10 +23,20 @@
       "target_hash": "e10adc3949ba59abbe56e057f20f883e",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.0005735479935538024
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 0.678121499993722,
+      "search_seconds": 0.4045905999955721,
+      "gpu_kernel_seconds": 4.8e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -35,10 +45,20 @@
       "target_hash": "e10adc3949ba59abbe56e057f20f883e",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.0009528350055916235
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 0.7678530999983195,
+      "search_seconds": 0.45727260000421666,
+      "gpu_kernel_seconds": 5.088e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -47,10 +67,20 @@
       "target_hash": "e10adc3949ba59abbe56e057f20f883e",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.0006785669975215569
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 0.6734279999946011,
+      "search_seconds": 0.3832323000096949,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -59,10 +89,20 @@
       "target_hash": "e10adc3949ba59abbe56e057f20f883e",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.0026066520003951155
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 0.6993557000096189,
+      "search_seconds": 0.41572599999199156,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -71,10 +111,20 @@
       "target_hash": "e10adc3949ba59abbe56e057f20f883e",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.0034339709964115173
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 0.6793706999887945,
+      "search_seconds": 0.40175960000487976,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -83,10 +133,20 @@
       "target_hash": "e10adc3949ba59abbe56e057f20f883e",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.003832854999927804
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 0.6717726999922888,
+      "search_seconds": 0.3923374000005424,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -95,10 +155,20 @@
       "target_hash": "7c4a8d09ca3762af61e59520943dc26494f8941b",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.0004648950052796863
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 0.6656406999973115,
+      "search_seconds": 0.38989269999729004,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -107,10 +177,20 @@
       "target_hash": "7c4a8d09ca3762af61e59520943dc26494f8941b",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.0006564159994013608
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 0.6604011000017636,
+      "search_seconds": 0.3847765999962576,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -119,10 +199,20 @@
       "target_hash": "7c4a8d09ca3762af61e59520943dc26494f8941b",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.0005344929959392175
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 0.7401061999989906,
+      "search_seconds": 0.4535957000043709,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -131,10 +221,20 @@
       "target_hash": "7c4a8d09ca3762af61e59520943dc26494f8941b",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.002349531998333987
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 0.8633191000117222,
+      "search_seconds": 0.49728399999730755,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -143,10 +243,20 @@
       "target_hash": "7c4a8d09ca3762af61e59520943dc26494f8941b",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.002936539996881038
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 0.7528028000087943,
+      "search_seconds": 0.4349616999970749,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -155,10 +265,20 @@
       "target_hash": "7c4a8d09ca3762af61e59520943dc26494f8941b",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.0029451009977492504
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 0.9529785999911837,
+      "search_seconds": 0.574257200001739,
+      "gpu_kernel_seconds": 5.12e-06,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -167,10 +287,20 @@
       "target_hash": "$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.415210120001575
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 1.2162161000014748,
+      "search_seconds": 0.8994148000056157,
+      "gpu_kernel_seconds": 0.494333952,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -179,10 +309,20 @@
       "target_hash": "$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.41579010400164407
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 1.1435064999968745,
+      "search_seconds": 0.8647823000064818,
+      "gpu_kernel_seconds": 0.478022528,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -191,10 +331,20 @@
       "target_hash": "$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.44719757099665003
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 1.5279642999958014,
+      "search_seconds": 1.203008199998294,
+      "gpu_kernel_seconds": 0.761495648,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -203,10 +353,20 @@
       "target_hash": "$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.06409976199938683
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 1.1864922999957344,
+      "search_seconds": 0.8949588000104995,
+      "gpu_kernel_seconds": 0.48621568,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -215,10 +375,20 @@
       "target_hash": "$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.062394657004915643
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 1.1635349999996834,
+      "search_seconds": 0.8678583000000799,
+      "gpu_kernel_seconds": 0.478894272,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -227,10 +397,20 @@
       "target_hash": "$2b$10$abcdefghijklmnopqrstuuxD0vCwu/f2ahNVJLL35ZYA2xuiRyPH6",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.06633367500035092
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 1.3236962999944808,
+      "search_seconds": 0.9620810999913374,
+      "gpu_kernel_seconds": 0.484350208,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -239,10 +419,20 @@
       "target_hash": "$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 1.3187195160062402
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 0.8283905999996932,
+      "search_seconds": 0.5245216999901459,
+      "gpu_kernel_seconds": 0.089419776,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -251,10 +441,20 @@
       "target_hash": "$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 1.211786713996844
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 0.9244343000027584,
+      "search_seconds": 0.5422771999874385,
+      "gpu_kernel_seconds": 0.082523136,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "mask",
@@ -263,10 +463,20 @@
       "target_hash": "$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",
       "expected_password": "123456",
       "total_search_space": 10,
-      "attempts": 7,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 1.207089465999161
+      "attempts": 10,
+      "workers": 10,
+      "backend": "gpu",
+      "elapsed_seconds": 0.859737299993867,
+      "search_seconds": 0.5557331000018166,
+      "gpu_kernel_seconds": 0.089043136,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -275,10 +485,20 @@
       "target_hash": "$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.1727697839960456
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 0.8596072999935132,
+      "search_seconds": 0.5512568999984069,
+      "gpu_kernel_seconds": 0.09564704,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -287,10 +507,20 @@
       "target_hash": "$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.1669683609943604
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 1.0073474000091664,
+      "search_seconds": 0.6432188000035239,
+      "gpu_kernel_seconds": 0.129526976,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     },
     {
       "scenario": "rockyou",
@@ -299,10 +529,20 @@
       "target_hash": "$argon2id$v=19$m=65536,t=3,p=2$c2FsdHNhbHQ$PUF5UxxoUY++mMekkQwFurL0ZsTtB7lelO23zcyZQ0c",
       "expected_password": "123456",
       "total_search_space": 14344391,
-      "attempts": 1,
-      "workers": 1,
-      "backend": "threads",
-      "elapsed_seconds": 0.174991202999081
+      "attempts": 16,
+      "workers": 16,
+      "backend": "gpu",
+      "elapsed_seconds": 1.0514071000070544,
+      "search_seconds": 0.6828029000025708,
+      "gpu_kernel_seconds": 0.128579584,
+      "gpu_device": {
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "vendor": "NVIDIA Corporation",
+        "driver": "591.86",
+        "type": "GPU",
+        "platform": "NVIDIA CUDA"
+      },
+      "batch_size": 16
     }
   ],
   "professional": [
@@ -315,10 +555,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 25.44494643899816,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.916515500008245,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "mask",
@@ -329,10 +569,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.5018885399986175,
-      "device_type": "cpu",
+      "elapsed_seconds": 2.0976623999886215,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "mask",
@@ -343,10 +583,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.4342983059977996,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.9351265999866882,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "rockyou",
@@ -357,10 +597,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.5847296810025,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.593088199995691,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "rockyou",
@@ -371,10 +611,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.004675905998738,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.4863765000045532,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "rockyou",
@@ -385,10 +625,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.656832573004067,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.4943563999986509,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 0 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "mask",
@@ -399,10 +639,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 27.00729944199702,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.9155939999909606,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "mask",
@@ -413,10 +653,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.4557416070019826,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.9164639000082389,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "mask",
@@ -427,10 +667,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.457064829999581,
-      "device_type": "cpu",
+      "elapsed_seconds": 2.0471383999974933,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "rockyou",
@@ -441,10 +681,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.5475016519994824,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.6592214999982389,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "rockyou",
@@ -455,10 +695,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.6133746190025704,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.5155012999894097,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "rockyou",
@@ -469,10 +709,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 2.504966646003595,
-      "device_type": "cpu",
+      "elapsed_seconds": 1.6189859000005526,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 100 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "mask",
@@ -483,10 +723,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 45.79378940600145,
-      "device_type": "cpu",
+      "elapsed_seconds": 7.775113299998338,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "mask",
@@ -497,10 +737,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 14.370610912999837,
-      "device_type": "cpu",
+      "elapsed_seconds": 8.918009700006223,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "mask",
@@ -511,10 +751,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 14.23759954200068,
-      "device_type": "cpu",
+      "elapsed_seconds": 7.667208300001221,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "rockyou",
@@ -525,10 +765,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 14.811857130996941,
-      "device_type": "cpu",
+      "elapsed_seconds": 9.750048599991715,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "rockyou",
@@ -539,10 +779,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 15.522033840999939,
-      "device_type": "cpu",
+      "elapsed_seconds": 10.87334039999405,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "rockyou",
@@ -553,10 +793,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 16.09794027600583,
-      "device_type": "cpu",
+      "elapsed_seconds": 10.787021699987235,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 3200 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "mask",
@@ -567,10 +807,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 26.096959073001926,
-      "device_type": "cpu",
+      "elapsed_seconds": 2.760436900003697,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "mask",
@@ -581,10 +821,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 5.720590503995481,
-      "device_type": "cpu",
+      "elapsed_seconds": 2.7156306999968365,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "mask",
@@ -595,10 +835,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 5.768980708999152,
-      "device_type": "cpu",
+      "elapsed_seconds": 2.733827599993674,
+      "device_type": "gpu",
       "attack": "mask",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 3 -1 0123456789 --markov-disable target.hash 12345?1"
     },
     {
       "scenario": "rockyou",
@@ -609,10 +849,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.287561512996035,
-      "device_type": "cpu",
+      "elapsed_seconds": 3.4418723999988288,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "rockyou",
@@ -623,10 +863,10 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.3140445809985977,
-      "device_type": "cpu",
+      "elapsed_seconds": 3.4764180000056513,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash rockyou.txt"
     },
     {
       "scenario": "rockyou",
@@ -637,21 +877,24 @@
       "available": true,
       "supported": true,
       "cracked": true,
-      "elapsed_seconds": 3.3080624229987734,
-      "device_type": "cpu",
+      "elapsed_seconds": 4.4517395999864675,
+      "device_type": "gpu",
       "attack": "wordlist",
-      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash rockyou.txt"
+      "command": "hashcat --backend-ignore-cuda --backend-ignore-hip -D 2 -d 1 --potfile-disable --restore-disable --logfile-disable -m 34000 -a 0 target.hash rockyou.txt"
     }
   ],
+  "hashcat_environment": "hashcat (v7.1.2) starting in backend information mode\n\nOpenCL Info:\n============\n\nOpenCL Platform ID #1\n  Vendor..: NVIDIA Corporation\n  Name....: NVIDIA CUDA\n  Version.: OpenCL 3.0 CUDA 13.1.123\n\n  Backend Device ID #01\n    Type...........: GPU\n    Vendor.ID......: 32\n    Vendor.........: NVIDIA Corporation\n    Name...........: NVIDIA GeForce RTX 4070 SUPER\n    Version........: OpenCL 3.0 CUDA\n    Processor(s)...: 56\n    Preferred.Thrd.: 32\n    Clock..........: 2640\n    Memory.Total...: 12281 MB (limited to 3070 MB allocatable in one block)\n    Memory.Free....: 12281 MB\n    Memory.Unified.: 0\n    Local.Memory...: 48 KB\n    OpenCL.Version.: OpenCL C 1.2 \n    Driver.Version.: 591.86\n    PCI.Addr.BDF...: 2b:00.0\n\n",
   "dictionary_source": {
     "source": "https://raw.githubusercontent.com/danielmiessler/SecLists/5e1dc9cc79aac54b373349e2a97bbb22f1b63bb3/Passwords/Leaked-Databases/rockyou.txt.tar.gz",
     "commit": "5e1dc9cc79aac54b373349e2a97bbb22f1b63bb3",
     "sha256": "6dfa76aa0e02303994fd1062d0ac983f0b69ece5474d85a5bba36362e19c1076",
     "bytes": 139921497
   },
-  "hashcat_environment": "hashcat (v7.1.2) starting in backend information mode\n\nOpenCL Info:\n============\n\nOpenCL Platform ID #1\n  Vendor..: The pocl project\n  Name....: Portable Computing Language\n  Version.: OpenCL 3.0 PoCL 6.0+debian  Linux, None+Asserts, RELOC, SPIR-V, LLVM 18.1.8, SLEEF, DISTRO, POCL_DEBUG\n\n  Backend Device ID #01\n    Type...........: CPU\n    Vendor.ID......: 1\n    Vendor.........: AuthenticAMD\n    Name...........: cpu-haswell-AMD Ryzen 5 3600 6-Core Processor\n    Version........: OpenCL 3.0 PoCL HSTR: cpu-x86_64-pc-linux-gnu-haswell\n    Processor(s)...: 1\n    Preferred.Thrd.: 1\n    Clock..........: 4000\n    Memory.Total...: 30013 MB (limited to 4096 MB allocatable in one block)\n    Memory.Free....: 15006 MB\n    Memory.Unified.: 1\n    Local.Memory...: 512 KB\n    OpenCL.Version.: OpenCL C 1.2 PoCL\n    Driver.Version.: 6.0+debian\n\n",
-  "cpu_affinity": [
-    0
-  ],
-  "pocl_max_pthread_count": "1"
+  "gpu_device": {
+    "name": "NVIDIA GeForce RTX 4070 SUPER",
+    "vendor": "NVIDIA Corporation",
+    "driver": "591.86",
+    "type": "GPU",
+    "platform": "NVIDIA CUDA"
+  }
 }
