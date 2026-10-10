@@ -89,17 +89,20 @@ def run(repeats=3, include_hashcat=False, executable='hashcat', smoke=False, bac
 
 
 def speed_summary(report):
-    """Compare matching tasks; hashcat N/t is task throughput, not device H/s."""
-    lines = ['', '## Сводная таблица скорости: Моё приложение и hashcat', '',
-             'Сценарий base: алфавит abc, длина 1, пароль c, 3 кандидата. '
-             'В таблице медианы повторов; «Моё приложение» использует минимальное число воркеров из этого отчёта. '
-             'Время приложения «Моё приложение» включает создание и завершение воркеров; '
-             'время hashcat включает запуск, инициализацию устройства и выполнение поиска. '
-             'Скорость приложения «Моё приложение» — фактические проверки / время. '
-             'Эффективная скорость задания hashcat — бюджет кандидатов N / полное время; '
-             'число реально обработанных GPU кандидатов отдельно не измерялось.', '',
-             '| Алгоритм | Моё приложение: режим / воркеры | Повторы: Моё приложение / hashcat | Моё приложение, с | Моё приложение, проверок/с | Hashcat, с | Hashcat, N/с по wall time |',
-             '| --- | --- | --- | ---: | ---: | ---: | ---: |']
+    """Compare complete search times and clearly label end-to-end task rates."""
+    lines = ['', '## Сравнение времени поиска пароля', '',
+             'Одинаковое задание: проверить варианты a, b, c и найти пароль c. '
+             'В таблице медианное время успешных запусков. Меньше время — быстрее выполнено это задание. '
+             'У приложения учтены создание воркеров и поиск; у hashcat — запуск, подготовка GPU и поиск.', '',
+             '| Алгоритм | Вариантов пароля в наборе | Моё приложение: время, с | Hashcat: время, с |',
+             '| --- | ---: | ---: | ---: |']
+    rates = ['', '## Скорость выполнения задания с учётом запуска', '',
+             'Здесь скорость = число вариантов пароля в наборе ÷ полное время выполнения. '
+             'Для обоих инструментов используется одна формула. Это показывает, '
+             'сколько кандидатов приходится на секунду общего времени, включая подготовку инструмента.', '',
+             '| Алгоритм | Моё приложение: кандидатов/с | Hashcat: кандидатов/с |',
+             '| --- | ---: | ---: |']
+    conditions = []
     for algorithm in ('md5', 'sha1', 'bcrypt', 'argon2id'):
         own = [row for row in report['results'] if row['scenario'] == 'base' and row['algorithm'] == algorithm]
         if not own:
@@ -115,15 +118,28 @@ def speed_summary(report):
                     and row.get('target_hash', target) == target
                     and row.get('total_search_space', total) == total]
         own_seconds = statistics.median(row['elapsed_seconds'] for row in own)
-        own_rate = statistics.median(row['attempts_per_second'] for row in own)
-        seconds = f"{statistics.median(row['elapsed_seconds'] for row in external):.6f}" if external else 'н/д'
-        rate = f"{statistics.median(total / row['elapsed_seconds'] for row in external):.3f}" if external else 'н/д'
-        lines.append(f"| {algorithm} | {report.get('backend', 'threads')} / {workers} | {len(own)} / {len(external)} | "
-                     f"{own_seconds:.9f} | {own_rate:.2f} | {seconds} | {rate} |")
-    lines += ['', 'bcrypt: cost=10. Argon2id: m=65536 KiB, t=3, p=2. '
-              'Сравниваются одинаковые учебные хэши и наборы кандидатов. '
-              'На трёх кандидатах доминируют накладные расходы: таблица не доказывает, '
-              'что Python быстрее GPU на большом переборе. н/д означает отсутствие успешного сопоставимого замера.', '']
+        own_rate = statistics.median(total / row['elapsed_seconds'] for row in own)
+        seconds = f"{statistics.median(row['elapsed_seconds'] for row in external):.6f}" if external else 'нет замера'
+        rate = f"{statistics.median(total / row['elapsed_seconds'] for row in external):.3f}" if external else 'нет замера'
+        label = {'md5': 'MD5', 'sha1': 'SHA-1', 'bcrypt': 'bcrypt', 'argon2id': 'Argon2id'}[algorithm]
+        lines.append(f"| {label} | {total} | {own_seconds:.6f} | {seconds} |")
+        rates.append(f"| {label} | {own_rate:.2f} | {rate} |")
+        mode = 'потоки' if report.get('backend', 'threads') == 'threads' else 'процессы'
+        conditions.append((mode, workers, len(own), len(external), label))
+    if conditions and len({row[:4] for row in conditions}) == 1:
+        mode, workers, own_runs, external_runs, _ = conditions[0]
+        description = (f"Режим приложения: {mode}; воркеров: {workers}. Для каждого алгоритма "
+                       f"запусков приложения: {own_runs}; запусков hashcat: {external_runs}.")
+    else:
+        description = '; '.join(f"{label}: {mode}, воркеров {workers}; запусков приложения {own_runs}, hashcat {external_runs}"
+                                for mode, workers, own_runs, external_runs, label in conditions) + '.'
+    lines += ['', description, *rates, '',
+              'Это эффективная скорость короткого задания, а не скорость GPU во время самого перебора. '
+              'На трёх кандидатах большую часть времени hashcat занимает подготовка. '
+              'Например, для MD5: 3 варианта ÷ полное время hashcat. '
+              'Из этой таблицы нельзя сделать вывод, что приложение быстрее GPU на большом наборе.', '',
+              'bcrypt: cost=10. Argon2id: m=65536 KiB, t=3, p=2. '
+              '«Нет замера» означает отсутствие успешного сопоставимого запуска.', '']
     return lines
 
 
