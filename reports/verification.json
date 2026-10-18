@@ -1,0 +1,14 @@
+{
+  "tests": {
+    "total": 41,
+    "passed": 40,
+    "skipped": 1,
+    "skip_reason": "POSIX process-group signal on Windows"
+  },
+  "cpu_measurements": 288,
+  "gpu_application_runs": 24,
+  "hashcat_runs": 24,
+  "all_gpu_searches_verified": true,
+  "dependency_check": "passed",
+  "sast_high": 0
+}
