@@ -1,41 +1,20 @@
 {
   "tests": {
-    "total": 47,
-    "passed": 46,
-    "skipped": 1,
-    "skip_reason": "POSIX process-group signal on Windows"
+    "total": 26,
+    "passed": 26,
+    "skipped": 0
   },
-  "cpu_measurements": 288,
+  "real_gpu_tests": 10,
+  "cpu_measurements": 60,
   "gpu_application_runs": 24,
   "hashcat_runs": 24,
   "all_gpu_searches_verified": true,
-  "dependency_check": "passed",
   "sast_high": 0,
-  "checked_on": "2026-10-24",
-  "real_gpu_tests": 11,
-  "worker_progress": {
-    "cpu_threads_and_processes": "passed",
-    "gpu_stable_slots_and_cumulative_counts": "passed",
-    "verified_password_per_matching_worker": "passed",
-    "duplicates_and_short_final_batch": "passed"
-  },
-  "readme_commands": {
-    "setup_and_help": "passed",
-    "gpu_four_workers": "passed",
-    "cpu_two_threads": "passed",
-    "cpu_two_processes": "passed",
-    "full_rockyou_gpu": "passed",
-    "exhaustion_exit_one": "passed",
-    "interactive_gpu_threads_processes_and_eof": "passed"
-  },
-  "benchmark_series": "2026-10-18; retained, not rerun during functional verification",
+  "dependency_check": "passed",
   "assignment_gpu_searches": {
     "total": 16,
-    "control_candidates": [
-      "123456",
-      "apple"
-    ],
     "found": 8,
     "exhausted": 8
-  }
+  },
+  "cli": "parameters only; CPU default; --gpu optional; workers and wordlists in both modes"
 }

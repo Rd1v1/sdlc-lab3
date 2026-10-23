@@ -24,11 +24,11 @@ class GpuTests(unittest.TestCase):
             for algorithm in ('md5', 'sha1', 'bcrypt', 'argon2id'):
                 for level, encoded in data[algorithm].items():
                     with self.subTest(algorithm=algorithm, level=level):
-                        result = search_gpu(HashTarget.parse(encoded), CrackConfig('ab', 1, 1), path, batch_size=2)
+                        result = search_gpu(HashTarget.parse(encoded), CrackConfig('ab', 1, 1, 2, True), path)
                         expected = {'easy': '123456', 'medium': 'apple'}.get(level)
-                        self.assertEqual(result['password'], expected)
-                        self.assertEqual(result['found'], expected is not None)
-                        self.assertEqual(result['candidates_checked'], 2)
+                        self.assertEqual(result.password, expected)
+                        self.assertEqual(result.found, expected is not None)
+                        self.assertEqual(result.candidates_checked, 2)
 
     def test_md5_sha1_full_digests_and_block_boundaries(self):
         from lab3.src.gpu import GpuHasher
@@ -62,98 +62,77 @@ class GpuTests(unittest.TestCase):
             self.assertEqual(engine.digest_batch(candidates), [base64.b64decode(value.split('$')[-1]+'=') for value in encoded])
             self.assertGreater(engine.kernel_seconds, 0)
 
-    def test_gpu_search_and_wordlist_do_not_call_hashcat(self):
+    def test_gpu_search_does_not_invoke_hashcat(self):
         from lab3.src.gpu import search_gpu
-        target = HashTarget.parse(hashlib.md5(b'123456', usedforsecurity=False).hexdigest())
-        with patch('subprocess.run', side_effect=AssertionError('Own GPU backend must not invoke hashcat')):
-            result = search_gpu(target, CrackConfig('0123456789', 1, 1, prefix='12345'))
-            self.assertEqual(result['password'], '123456')
-            self.assertEqual(result['backend'], 'gpu')
-            self.assertEqual(result['candidates_checked'], 10)
-            with tempfile.TemporaryDirectory() as folder:
-                path = Path(folder)/'words.txt'
-                path.write_bytes(b'other\n123456\n')
-                result = search_gpu(target, CrackConfig('a', 1, 1), path, batch_size=2)
-                self.assertEqual(result['password'], '123456')
-                self.assertEqual(result['candidates_checked'], 2)
+        target = HashTarget.parse(hashlib.md5(b'cc', usedforsecurity=False).hexdigest())
+        with patch('subprocess.run', side_effect=AssertionError('must not invoke hashcat')):
+            result = search_gpu(target, CrackConfig('abc', 2, 2, 4, True))
+        self.assertEqual(result.password, 'cc')
+        self.assertEqual(result.candidates_checked, 9)
+        self.assertGreater(result.gpu_kernel_seconds, 0)
 
-    def test_binary_wordlist_and_rejected_lengths(self):
+    def test_worker_counts_matches_duplicates_and_short_last_batch(self):
+        from lab3.src.gpu import search_gpu
+        target = HashTarget.parse(hashlib.md5(b'a', usedforsecurity=False).hexdigest())
+        config = CrackConfig(workers=2, gpu=True)
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/'words.txt'
+            for content, expected_counts, expected_passwords in (
+                    (b'a\na\n', [1, 1], ['a', 'a']), (b'b\nc\nd\n', [2, 1], [None, None])):
+                path.write_bytes(content)
+                snapshots = []
+                result = search_gpu(target, config, path, snapshots.append)
+                self.assertEqual([row.checked for row in snapshots[-1]], expected_counts)
+                self.assertEqual([row.found_password for row in snapshots[-1]], expected_passwords)
+                self.assertEqual(sum(row.checked for row in snapshots[-1]), result.candidates_checked)
+                self.assertTrue(all([row.worker for row in rows] == [1, 2] for rows in snapshots))
+
+    def test_binary_dictionary_and_rejected_lengths(self):
         from lab3.src.gpu import search_gpu
         target = HashTarget.parse(hashlib.md5(b'\xffpass', usedforsecurity=False).hexdigest())
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'words.txt'
             path.write_bytes(b'x'*257+b'\n\xffpass\n')
-            result = search_gpu(target, CrackConfig('a', 1, 1), path, batch_size=2)
-            self.assertTrue(result['found'])
-            self.assertEqual(result['rejected'], 1)
-            self.assertEqual(result['password_hex'], b'\xffpass'.hex())
+            rows = []
+            result = search_gpu(target, CrackConfig(workers=2, gpu=True), path, rows.append)
+            self.assertEqual(result.rejected, 1)
+            self.assertEqual(result.password_hex, b'\xffpass'.hex())
+            self.assertEqual([row.status for row in rows[-1]], ['skipped', 'found'])
 
-    def test_exhausted_search(self):
+    def test_exhaustion(self):
         from lab3.src.gpu import search_gpu
-        target = HashTarget.parse(hashlib.sha1(b'absent', usedforsecurity=False).hexdigest())
-        result = search_gpu(target, CrackConfig('ab', 1, 2), batch_size=3)
-        self.assertFalse(result['found'])
-        self.assertEqual(result['candidates_checked'], 6)
+        result = search_gpu(HashTarget('md5', '0'*32), CrackConfig('ab', 1, 2, 3, True))
+        self.assertFalse(result.found)
+        self.assertEqual(result.candidates_checked, 6)
 
-    def test_gpu_worker_progress_counts_and_verified_results(self):
-        from lab3.src.gpu import search_gpu
-        target = HashTarget.parse(hashlib.md5(b'cc', usedforsecurity=False).hexdigest())
-        snapshots = []
-        result = search_gpu(target, CrackConfig('abc', 1, 2), batch_size=2, on_progress=snapshots.append)
-        self.assertEqual(result['password'], 'cc')
-        self.assertEqual(result['workers'], 2)
-        self.assertTrue(all([row.worker for row in rows] == [1, 2] for rows in snapshots))
-        self.assertEqual([row.checked for row in snapshots[-1]], [6, 6])
-        self.assertEqual([row.found_password for row in snapshots[-1]], [None, 'cc'])
-        self.assertEqual([row.status for row in snapshots[-1]], ['done', 'found'])
-        for worker in range(2):
-            counts = [rows[worker].checked for rows in snapshots]
-            self.assertEqual(counts, sorted(counts))
-
-    def test_gpu_duplicate_matches_and_idle_worker_in_short_last_batch(self):
-        from lab3.src.gpu import search_gpu
-        target = HashTarget.parse(hashlib.md5(b'a', usedforsecurity=False).hexdigest())
-        with tempfile.TemporaryDirectory() as folder:
-            path = Path(folder)/'words.txt'
-            path.write_bytes(b'a\na\n')
-            snapshots = []
-            search_gpu(target, CrackConfig('ab', 1, 1), path, batch_size=2, on_progress=snapshots.append)
-            self.assertEqual([row.found_password for row in snapshots[-1]], ['a', 'a'])
-            path.write_bytes(b'b\nc\nd\n')
-            snapshots = []
-            result = search_gpu(target, CrackConfig('ab', 1, 1), path, batch_size=2, on_progress=snapshots.append)
-            self.assertFalse(result['found'])
-            self.assertEqual([row.checked for row in snapshots[-1]], [2, 1])
-            self.assertEqual([row.candidate for row in snapshots[-1]], ['d', 'c'])
-            self.assertTrue(all(row.status == 'done' and row.found_password is None for row in snapshots[-1]))
-
-    def test_limits_and_no_cpu_fallback(self):
+    def test_limits_and_gpu_missing_without_cpu_fallback(self):
+        import pyopencl as cl
         from argon2 import PasswordHasher
         from lab3.src.gpu import GpuHasher, search_gpu
         target = HashTarget.parse(hashlib.md5(b'abc', usedforsecurity=False).hexdigest())
-        with self.assertRaises(RuntimeError):
-            GpuHasher(target, device_index=999)
+        with patch.object(cl, 'get_platforms', return_value=[]), self.assertRaises(RuntimeError):
+            GpuHasher(target)
+        for failing_api in ('Context', 'Program'):
+            with patch.object(cl, failing_api, side_effect=cl.RuntimeError('unavailable')):
+                with self.subTest(api=failing_api), self.assertRaisesRegex(RuntimeError, 'OpenCL'):
+                    GpuHasher(target)
         with self.assertRaises(ValueError):
             GpuHasher(HashTarget('sha1', target.encoded))
         with self.assertRaises(ValueError):
             GpuHasher(target).digest_batch([b'x'*257])
         argon = HashTarget.parse(PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1).hash('a'))
         with self.assertRaises(ValueError):
-            search_gpu(argon, CrackConfig('a', 1, 1), batch_size=33)
+            search_gpu(argon, CrackConfig('a', 1, 1, 33, True))
 
-    def test_gpu_cli_and_invalid_device(self):
-        target = hashlib.md5(b'c', usedforsecurity=False).hexdigest()
-        args = [target, '--backend', 'gpu', '--alphabet', 'abc', '--max-length', '1', '--no-progress']
-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(run(args), 0)
-            self.assertEqual(run(args+['--gpu-device', '999']), 2)
+    def test_gpu_cli_and_password_per_worker(self):
+        import json
+        args = [hashlib.md5(b'c', usedforsecurity=False).hexdigest(), '--gpu', '--workers', '3',
+                '--alphabet', 'abc', '--max-length', '1']
         stdout, stderr = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-            self.assertEqual(run(args[:-1]+['--workers', '3', '--progress']), 0)
-        import json
-        self.assertEqual(json.loads(stdout.getvalue())['workers'], 3)
+            self.assertEqual(run(args), 0)
+        self.assertEqual(json.loads(stdout.getvalue())['password'], 'c')
         self.assertIn('FOUND by worker 3: "c"', stderr.getvalue())
-
-
-if __name__ == '__main__':
-    unittest.main()
+        with patch('lab3.src.gpu.GpuHasher', side_effect=RuntimeError('no GPU')):
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(run(args), 2)

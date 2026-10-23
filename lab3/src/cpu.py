@@ -1,134 +1,81 @@
-"""Разделение диапазона между потоками или процессами и остановка поиска."""
-from __future__ import annotations
-
-import multiprocessing
+"""Последовательный поиск или несколько потоков с общим потоком кандидатов."""
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
+from contextlib import closing
 import threading
 import time
-from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
-from typing import Callable
-from .candidates import _candidate_global
-from .hashes import HashTarget, TargetError
-from .models import CrackConfig, CrackResult, WorkerProgress
+from .candidates import iter_candidates
+from .hashes import HashTarget
+from .models import CrackResult, WorkerProgress
 
 
-_STATUSES = ("waiting", "running", "done", "found", "stopped", "error")
-_PROCESS_STATE = None
-
-
-def _publish(state, locks, worker, checked, index, status):
-    with locks[worker]:
-        offset = worker * 3
-        state[offset] = checked
-        state[offset + 1] = index
-        state[offset + 2] = status
-
-
-def _snapshot(state, locks, config):
-    rows = []
-    for worker in range(config.workers):
-        with locks[worker]:
-            checked, index, status = state[worker * 3:worker * 3 + 3]
-        rows.append(WorkerProgress(worker + 1, _candidate_global(index, config) if index >= 0 else None,
-                                   checked, _STATUSES[status]))
-    return tuple(rows)
-
-
-def _scan_worker(target, config, worker, start, end, stopped, state, locks, monitored):
-    checked = 0
-    index = -1
-    status = 2
-    next_update = 0.0
-    try:
-        for index in range(start, end):
-            if stopped.is_set():
-                status = 4
-                # Keep the last attempted index, rather than an untested candidate.
-                index = index - 1 if checked else -1
-                break
-            candidate = _candidate_global(index, config)
-            if monitored and time.monotonic() >= next_update:
-                _publish(state, locks, worker, checked, index, 1)
-                next_update = time.monotonic() + 0.05
-            matched = target.matches(candidate)
-            checked += 1
-            if matched:
-                status = 3
-                stopped.set()
-                return candidate, checked
-        return None, checked
-    except BaseException:
-        status = 5
-        stopped.set()
-        raise
-    finally:
-        _publish(state, locks, worker, checked, index, status)
-
-
-def _initialize_process(stopped, state, locks):
-    # The parent handles Ctrl+C and asks workers to stop between verifications.
-    import signal
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-    global _PROCESS_STATE
-    _PROCESS_STATE = (stopped, state, locks)
-
-
-def _scan_process(target, config, worker, start, end, monitored):
-    stopped, state, locks = _PROCESS_STATE
-    return _scan_worker(target, config, worker, start, end, stopped, state, locks, monitored)
-
-
-def crack(target: HashTarget, config: CrackConfig,
-          on_progress: Callable[[tuple[WorkerProgress, ...]], None] | None = None) -> CrackResult:
-    total = config.validate()
-    # Validate manually constructed targets as well as CLI input, before spawning workers.
-    if target.algorithm not in ('md5', 'sha1', 'bcrypt', 'argon2id'):
-        raise TargetError("Неподдерживаемый алгоритм")
+def crack(target, config, wordlist=None, on_progress=None):
+    total = config.validate(wordlist)
     parsed = HashTarget.parse(target.encoded)
     if parsed.algorithm != target.algorithm:
-        raise TargetError("Алгоритм не соответствует хэшу")
+        raise ValueError('Алгоритм не соответствует хэшу')
     target = parsed
     started = time.perf_counter()
-    if config.backend == "processes":
-        context = multiprocessing.get_context("spawn")
-        stopped = context.Event()
-        state = context.RawArray("q", config.workers * 3)
-        locks = [context.Lock() for _ in range(config.workers)]
-        executor = ProcessPoolExecutor(max_workers=config.workers, mp_context=context,
-                                       initializer=_initialize_process, initargs=(stopped, state, locks))
-    else:
-        stopped = threading.Event()
-        state = [0] * (config.workers * 3)
-        locks = [threading.Lock() for _ in range(config.workers)]
-        executor = ThreadPoolExecutor(max_workers=config.workers, thread_name_prefix="candidate-check")
-    for worker in range(config.workers):
-        _publish(state, locks, worker, 0, -1, 0)
-    futures = []
-    password = None
-    checked = 0
-    try:
-        if on_progress:
-            on_progress(_snapshot(state, locks, config))
-        for worker in range(config.workers):
-            start, end = total * worker // config.workers, total * (worker + 1) // config.workers
-            if config.backend == "processes":
-                future = executor.submit(_scan_process, target, config, worker, start, end, on_progress is not None)
-            else:
-                future = executor.submit(_scan_worker, target, config, worker, start, end,
-                                         stopped, state, locks, on_progress is not None)
-            futures.append(future)
-        pending = set(futures)
-        while pending:
-            finished, pending = wait(pending, timeout=0.1, return_when=FIRST_COMPLETED)
-            for future in finished:
-                found, attempts = future.result()
-                checked += attempts
-                if found is not None:
-                    password = found
-            if on_progress:
-                on_progress(_snapshot(state, locks, config))
-    finally:
-        stopped.set()
-        executor.shutdown(wait=True, cancel_futures=True)
-    return CrackResult(password is not None, password, time.perf_counter() - started,
-                       checked, total, config.workers, config.backend)
+    stopped = threading.Event()
+    lock = threading.Lock()
+    rows = [WorkerProgress(index + 1, None, 0, 'waiting') for index in range(config.workers)]
+    candidates = iter_candidates(config, wordlist)
 
+    def publish():
+        if on_progress:
+            with lock:
+                snapshot = tuple(rows)
+            on_progress(snapshot)
+
+    def scan(worker):
+        checked, candidate, status = 0, None, 'done'
+        try:
+            while not stopped.is_set():
+                with lock:
+                    raw = next(candidates, None)
+                    if raw is None:
+                        break
+                    candidate = raw.decode('utf-8', errors='backslashreplace')
+                    rows[worker] = WorkerProgress(worker + 1, candidate, checked, 'running')
+                if config.workers == 1:
+                    publish()
+                matched = target.matches(raw)
+                checked += 1
+                with lock:
+                    rows[worker] = WorkerProgress(worker + 1, candidate, checked, 'running')
+                if matched:
+                    status = 'found'
+                    stopped.set()
+                    return raw
+            else:
+                status = 'stopped'
+        except BaseException:
+            status = 'error'
+            stopped.set()
+            raise
+        finally:
+            with lock:
+                rows[worker] = WorkerProgress(worker + 1, candidate, checked, status)
+        return None
+
+    with closing(candidates):
+        publish()
+        if config.workers == 1:
+            password = scan(0)
+        else:
+            executor = ThreadPoolExecutor(max_workers=config.workers, thread_name_prefix='lab3-worker')
+            try:
+                futures = [executor.submit(scan, worker) for worker in range(config.workers)]
+                pending = set(futures)
+                while pending:
+                    finished, pending = wait(pending, timeout=0.1, return_when=FIRST_COMPLETED)
+                    for future in finished:
+                        future.result()
+                    publish()
+                password = next((value for future in futures if (value := future.result()) is not None), None)
+            finally:
+                stopped.set()
+                executor.shutdown(wait=True, cancel_futures=True)
+        publish()
+    return CrackResult(password is not None, password.decode('utf-8', errors='backslashreplace') if password is not None else None,
+                       time.perf_counter() - started, sum(row.checked for row in rows), total,
+                       config.workers, 'cpu', password.hex() if password is not None else None)

@@ -2,7 +2,6 @@ import contextlib
 import hashlib
 import io
 import json
-import multiprocessing
 import os
 from pathlib import Path
 import subprocess
@@ -12,203 +11,106 @@ import time
 import unittest
 from unittest.mock import patch
 
-from lab3.src.progress import CliProgress
-from lab3.src.models import CrackConfig
-from lab3.src.hashes import HashTarget, TargetError
-from lab3.src.cpu import crack
 from lab3.src.cli import run
-
-
-ROOT = Path(__file__).resolve().parents[2]
+from lab3.src.cpu import crack
+from lab3.src.hashes import HashTarget
+from lab3.src.models import CrackConfig, WorkerProgress
+from lab3.src.progress import CliProgress
 
 
 class WorkerTests(unittest.TestCase):
-    def test_both_backends_all_hashes_and_worker_counts(self):
-        import bcrypt
-        from argon2 import PasswordHasher
-        hashes = [hashlib.md5(b'ba', usedforsecurity=False).hexdigest(),
-                  hashlib.sha1(b'ba', usedforsecurity=False).hexdigest(),
-                  bcrypt.hashpw(b'ba', bcrypt.gensalt(rounds=4)).decode(),
-                  PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1).hash('ba')]
-        for backend in ('threads', 'processes'):
-            for workers in (1, 2):
-                for encoded in hashes:
-                    with self.subTest(backend=backend, workers=workers, hash=encoded):
-                        result = crack(HashTarget.parse(encoded), CrackConfig('ab', 1, 2, workers=workers, backend=backend))
-                        self.assertEqual(result.password, 'ba')
-                        self.assertTrue(result.found)
-                        self.assertEqual(result.backend, backend)
-                        self.assertEqual(result.workers, workers)
-                        self.assertLessEqual(result.candidates_checked, result.total_candidates)
+    def test_one_worker_runs_on_main_thread_without_executor(self):
+        caller = threading.get_ident()
+        threads = []
+        with patch('lab3.src.cpu.ThreadPoolExecutor', side_effect=AssertionError('single worker must be sequential')):
+            with patch.object(HashTarget, 'matches', side_effect=lambda raw: threads.append(threading.get_ident()) or False):
+                crack(HashTarget('md5', '0'*32), CrackConfig('ab', 1, 2))
+        self.assertEqual(threads, [caller]*6)
 
-    def test_exhaustion_and_exact_worker_partition(self):
-        from lab3.src.candidates import iter_candidates
-        candidates = list(iter_candidates(CrackConfig('abc', 1, 3)))
-        target = HashTarget.parse(hashlib.sha1(b'outside', usedforsecurity=False).hexdigest())
-        for backend in ('threads', 'processes'):
-            snapshots = []
-            config = CrackConfig('abc', 1, 3, workers=2, backend=backend)
-            result = crack(target, config, on_progress=snapshots.append)
-            self.assertFalse(result.found)
-            self.assertEqual(result.candidates_checked, 39)
-            final = snapshots[-1]
-            self.assertEqual([row.checked for row in final], [19, 20])
-            self.assertEqual([row.candidate for row in final], [candidates[18], candidates[38]])
-            self.assertEqual([row.status for row in final], ['done', 'done'])
-            self.assertEqual([row.worker for row in final], [1, 2])
-
-    def test_more_workers_than_candidates(self):
-        target = HashTarget.parse(hashlib.md5(b'outside', usedforsecurity=False).hexdigest())
-        snapshots = []
-        result = crack(target, CrackConfig('a', 1, 1, workers=2, backend='processes'), snapshots.append)
-        self.assertEqual(result.candidates_checked, 1)
-        self.assertEqual(sum(row.checked for row in snapshots[-1]), 1)
-        self.assertTrue(all(row.status == 'done' for row in snapshots[-1]))
-
-    def test_live_candidates_are_real_and_counts_monotonic(self):
-        snapshots = []
-        def slow_match(target, candidate):
-            time.sleep(0.012)
+    def test_shared_stream_has_no_gaps_duplicates_and_live_progress(self):
+        seen, snapshots = [], []
+        def check(target, raw):
+            seen.append(raw)
+            time.sleep(0.008)
             return False
-        with patch.object(HashTarget, 'matches', slow_match):
-            crack(HashTarget('md5', '0' * 32), CrackConfig('ab', 5, 5, workers=2), snapshots.append)
+        with patch.object(HashTarget, 'matches', check):
+            result = crack(HashTarget('md5', '0'*32), CrackConfig('abc', 1, 3, 2), on_progress=snapshots.append)
+        self.assertEqual(len(seen), len(set(seen)))
+        self.assertEqual(len(seen), 39)
+        self.assertEqual(sum(row.checked for row in snapshots[-1]), result.candidates_checked)
+        self.assertTrue(all(row.checked > 0 and row.status == 'done' for row in snapshots[-1]))
         self.assertTrue(any(row.status == 'running' for rows in snapshots for row in rows))
         for worker in range(2):
             counts = [rows[worker].checked for rows in snapshots]
             self.assertEqual(counts, sorted(counts))
-        self.assertTrue(all(row.candidate is None or (len(row.candidate) == 5 and set(row.candidate) <= set('ab'))
-                            for rows in snapshots for row in rows))
 
-    def test_early_success_counts_completed_checks_and_stops(self):
-        calls = []
-        lock = threading.Lock()
-        def found(target, candidate):
-            time.sleep(0.002)
-            with lock:
-                calls.append(candidate)
-            return candidate == 'aa'
-        with patch.object(HashTarget, 'matches', found):
-            result = crack(HashTarget('md5', '0' * 32), CrackConfig('abc', 2, 2, workers=2))
+    def test_early_match_and_password_only_for_matching_worker(self):
+        snapshots, checked = [], []
+        def check(target, raw):
+            checked.append(raw)
+            time.sleep(0.003)
+            return raw == b'aa'
+        with patch.object(HashTarget, 'matches', check):
+            result = crack(HashTarget('md5', '0'*32), CrackConfig('abc', 2, 2, 2), on_progress=snapshots.append)
         self.assertEqual(result.password, 'aa')
-        self.assertEqual(result.candidates_checked, len(calls))
-        self.assertLess(result.candidates_checked, 9)
+        self.assertEqual(result.candidates_checked, len(checked))
+        self.assertLess(len(checked), 9)
+        self.assertEqual([row.found_password for row in snapshots[-1] if row.status == 'found'], ['aa'])
+        self.assertTrue(all(row.found_password is None for row in snapshots[-1] if row.status != 'found'))
 
-    def test_found_password_belongs_only_to_matching_worker(self):
-        target = HashTarget.parse(hashlib.sha1(b'bb', usedforsecurity=False).hexdigest())
-        for backend in ('threads', 'processes'):
-            with self.subTest(backend=backend):
-                snapshots = []
-                result = crack(target, CrackConfig('ab', 2, 2, workers=2, backend=backend), snapshots.append)
-                final = snapshots[-1]
-                self.assertEqual([row.worker for row in final], [1, 2])
-                self.assertEqual([row.found_password for row in final], [None, 'bb'])
-                self.assertEqual(sum(row.checked for row in final), result.candidates_checked)
-                self.assertTrue(all(row.status not in ('waiting', 'running') for row in final))
-
-    def test_cancellation_cleans_spawned_processes(self):
-        import bcrypt
-        target = HashTarget.parse(bcrypt.hashpw(b'outside', bcrypt.gensalt(rounds=8)).decode())
-        existing = {process.pid for process in multiprocessing.active_children()}
-        def cancel_when_running(rows):
-            if any(row.status == 'running' for row in rows):
-                raise KeyboardInterrupt
-        with self.assertRaises(KeyboardInterrupt):
-            crack(target, CrackConfig('ab', 5, 5, workers=2, backend='processes'), cancel_when_running)
-        self.assertEqual({process.pid for process in multiprocessing.active_children()}, existing)
-
-    def test_worker_error_cleans_threads(self):
+    def test_error_and_cancellation_cleanup_threads(self):
         before = {thread.ident for thread in threading.enumerate()}
         with patch.object(HashTarget, 'matches', side_effect=RuntimeError('verifier failed')):
             with self.assertRaisesRegex(RuntimeError, 'verifier failed'):
-                crack(HashTarget('md5', '0' * 32), CrackConfig('ab', 2, 2, workers=2))
+                crack(HashTarget('md5', '0'*32), CrackConfig('ab', 2, 2, 2))
+        def cancel(rows):
+            if any(row.status == 'running' for row in rows):
+                raise KeyboardInterrupt
+        def slow(target, raw):
+            time.sleep(0.02)
+            return False
+        with patch.object(HashTarget, 'matches', slow), self.assertRaises(KeyboardInterrupt):
+            crack(HashTarget('md5', '0'*32), CrackConfig('ab', 5, 5, 2), on_progress=cancel)
         self.assertEqual({thread.ident for thread in threading.enumerate()}, before)
 
-    def test_invalid_worker_options_and_control_characters(self):
-        for config in (CrackConfig('ab', 1, 1, workers=0), CrackConfig('ab', 1, 1, workers=65),
-                       CrackConfig('ab', 1, 1, backend='hybrid'), CrackConfig('a\x1b', 1, 1)):
-            with self.assertRaises(ValueError):
-                config.validate()
-        with self.assertRaises(TargetError):
-            crack(HashTarget('sha1', '0' * 32), CrackConfig('ab', 1, 1))
-
-    def test_cli_process_progress_keeps_stdout_json(self):
-        target = hashlib.md5(b'ba', usedforsecurity=False).hexdigest()
-        process = subprocess.run([sys.executable, str(ROOT / 'main.py'), target,
-                                  '--alphabet', 'ab', '--max-length', '2', '--workers', '2',
-                                  '--backend', 'processes', '--progress'], cwd=ROOT,
-                                 capture_output=True, text=True, encoding='utf-8', timeout=30,
-                                 env={**os.environ, 'PYTHONUTF8': '1'})
+    def test_cli_is_parameter_only_and_stdout_is_json(self):
+        root = Path(__file__).resolve().parents[2]
+        args = [sys.executable, str(root/'main.py'), hashlib.md5(b'ba', usedforsecurity=False).hexdigest(),
+                '--alphabet', 'ab', '--min-length', '2', '--max-length', '2', '--workers', '2']
+        process = subprocess.run(args, cwd=root, capture_output=True, text=True, encoding='utf-8',
+                                 env={**os.environ, 'PYTHONUTF8': '1'}, timeout=15)
         self.assertEqual(process.returncode, 0, process.stderr)
         self.assertEqual(json.loads(process.stdout)['password'], 'ba')
-        self.assertIn('WORKER', process.stderr)
-        self.assertIn('CANDIDATE', process.stderr)
         self.assertIn('FOUND PASSWORD', process.stderr)
-        self.assertIn('FOUND by worker 2: "ba"', process.stderr)
+        self.assertIn('FOUND by worker', process.stderr)
         self.assertNotIn('\x1b', process.stderr)
+        with patch('builtins.input', side_effect=AssertionError('no questions')):
+            with contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(run([]), 0)
+                self.assertIn('--gpu', output.getvalue())
 
-    def test_interactive_mode_and_eof(self):
-        target = hashlib.md5(b'b', usedforsecurity=False).hexdigest()
-        args = [target, '--alphabet', 'ab', '--max-length', '1', '--interactive', '--no-progress']
+    def test_cli_exit_codes_and_removed_options(self):
+        target = hashlib.md5(b'c', usedforsecurity=False).hexdigest()
+        args = [target, '--alphabet', 'ab', '--max-length', '1', '--no-progress']
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            with patch('builtins.input', side_effect=['threads', '2']):
-                self.assertEqual(run(args), 0)
-            with patch('builtins.input', side_effect=EOFError):
+            self.assertEqual(run(args), 1)
+            self.assertEqual(run(['bad-hash']), 2)
+            self.assertEqual(run(args+['--workers', '0']), 2)
+            with patch('lab3.src.cli.crack', side_effect=KeyboardInterrupt):
                 self.assertEqual(run(args), 130)
+            for removed in ('--backend', '--interactive', '--prefix', '--gpu-batch-size', '--gpu-device'):
+                with self.subTest(option=removed), self.assertRaises(SystemExit) as error:
+                    run(args+[removed, '1'])
+                self.assertEqual(error.exception.code, 2)
 
-    @unittest.skipUnless(os.name == 'posix', 'Console process-group SIGINT test requires POSIX')
-    def test_cli_sigint_stops_parent_and_children(self):
-        import bcrypt
-        import signal
-        target = bcrypt.hashpw(b'outside', bcrypt.gensalt(rounds=8)).decode()
-        process = subprocess.Popen([sys.executable, str(ROOT / 'main.py'), target,
-                                    '--alphabet', 'abcd', '--min-length', '6', '--max-length', '6',
-                                    '--workers', '2', '--backend', 'processes', '--progress'],
-                                   cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   text=True, encoding='utf-8', start_new_session=True)
-        try:
-            time.sleep(0.6)
-            os.killpg(process.pid, signal.SIGINT)
-            stdout, stderr = process.communicate(timeout=10)
-            self.assertEqual(process.returncode, 130, stderr)
-            self.assertIn('Перебор прерван', stderr)
-            self.assertEqual(stdout, '')
-        finally:
-            if process.poll() is None:
-                os.killpg(process.pid, signal.SIGKILL)
-                process.communicate()
-
-    def test_renderer_terminal_and_safe_unicode(self):
-        from lab3.src.models import WorkerProgress
+    def test_renderer_keeps_full_match_and_escapes_candidates(self):
         stream = io.StringIO()
-        renderer = CliProgress(CrackConfig('я', 1, 1), stream=stream)
+        renderer = CliProgress(CrackConfig('ab', 1, 1, 2), stream=stream)
         renderer.ansi = True
-        renderer((WorkerProgress(1, None, 0, 'waiting'),))
-        renderer((WorkerProgress(1, 'я', 1, 'found'),))
-        self.assertIn('\x1b[', stream.getvalue())
-        self.assertIn('"\\u044f"', stream.getvalue())
-        self.assertIn('FOUND by worker 1: "\\u044f"', stream.getvalue())
-
-    def test_renderer_distinguishes_sample_from_match_and_keeps_full_password(self):
-        from lab3.src.models import WorkerProgress
-        stream = io.StringIO()
-        renderer = CliProgress(CrackConfig('ab', 1, 1, workers=2), stream=stream)
-        password = 'long-password-' * 10
-        renderer((WorkerProgress(1, 'sample', 1, 'done'), WorkerProgress(2, password, 2, 'found')))
+        password = 'пароль'*20
+        renderer((WorkerProgress(1, None, 0, 'waiting'), WorkerProgress(2, None, 0, 'waiting')))
+        renderer((WorkerProgress(1, '\x1b[31m', 1, 'done'), WorkerProgress(2, password, 1, 'found')))
         output = stream.getvalue()
-        self.assertIn('FOUND PASSWORD', output)
+        self.assertIn('\x1b[', output)
+        self.assertIn('FOUND by worker 2: '+json.dumps(password, ensure_ascii=True), output)
         self.assertNotIn('FOUND by worker 1', output)
-        self.assertIn(f'FOUND by worker 2: "{password}"', output)
-
-    def test_invalid_gpu_worker_arguments_fail_before_starting_device(self):
-        target = hashlib.md5(b'a', usedforsecurity=False).hexdigest()
-        for options in (['--backend', 'gpu', '--workers', '0'],
-                        ['--backend', 'gpu', '--workers', '4097'],
-                        ['--backend', 'gpu', '--workers', '2', '--gpu-batch-size', '3'],
-                        ['--backend', 'threads', '--gpu-batch-size', '2']):
-            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                with patch('lab3.src.gpu.GpuHasher', side_effect=AssertionError('must validate first')):
-                    self.assertEqual(run([target, *options]), 2)
-
-
-if __name__ == '__main__':
-    unittest.main()

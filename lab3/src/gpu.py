@@ -1,6 +1,7 @@
 """Independent PyOpenCL host engine; no hashcat process is used by this module."""
 from __future__ import annotations
 import base64
+from contextlib import closing
 import itertools
 import os
 from pathlib import Path
@@ -10,8 +11,7 @@ import time
 
 from .candidates import iter_candidates
 from .hashes import HashTarget
-from .models import WorkerProgress
-from .wordlist import inspect_wordlist
+from .models import CrackResult, WorkerProgress
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,7 +44,7 @@ def _bcrypt_decode(text):
 
 
 class GpuHasher:
-    def __init__(self, target: HashTarget, device_index=0):
+    def __init__(self, target: HashTarget):
         cache = ROOT/'.cache/pyopencl'
         scratch = ROOT/'.tmp/gpu'
         driver_cache = ROOT/'.cache/nvidia'
@@ -72,13 +72,19 @@ class GpuHasher:
             raise ValueError('Алгоритм не соответствует хэшу')
         target = parsed
         self.cl, self.np, self.target = cl, np, target
-        devices = [device for platform in cl.get_platforms() for device in platform.get_devices()
-                   if device.type & cl.device_type.GPU]
-        if not 0 <= device_index < len(devices):
+        try:
+            devices = [device for platform in cl.get_platforms() for device in platform.get_devices()
+                       if device.type & cl.device_type.GPU]
+        except cl.Error as error:
+            raise RuntimeError('GPU/OpenCL недоступна') from error
+        if not devices:
             raise RuntimeError('Указанная GPU недоступна; CPU fallback отключён')
-        self.device = devices[device_index]
-        self.context = cl.Context([self.device])
-        self.queue = cl.CommandQueue(self.context, properties=cl.command_queue_properties.PROFILING_ENABLE)
+        self.device = devices[0]
+        try:
+            self.context = cl.Context([self.device])
+            self.queue = cl.CommandQueue(self.context, properties=cl.command_queue_properties.PROFILING_ENABLE)
+        except cl.Error as error:
+            raise RuntimeError(f'Ошибка инициализации OpenCL: {error}') from error
         self.kernel_seconds = 0.0
         self.events = []
         self.memory_per_candidate = 0
@@ -112,7 +118,10 @@ class GpuHasher:
         options = ['-DDEVICE_TYPE=4', '-DVENDOR_ID=32' if 'NVIDIA' in self.device.vendor else '-DVENDOR_ID=0',
                    '-DLOCAL_MEM_TYPE=1', '-DVECT_SIZE=1', '-DKERNEL_STATIC', '-DDGST_ELEM=16', '-DFIXED_LOCAL_SIZE=8',
                    '-DDGST_R0=0', '-DDGST_R1=1', '-DDGST_R2=2', '-DDGST_R3=3']
-        self.program = cl.Program(self.context, _source(names)+'\n'+wrapper).build(options=options, cache_dir=native_path(cache))
+        try:
+            self.program = cl.Program(self.context, _source(names)+'\n'+wrapper).build(options=options, cache_dir=native_path(cache))
+        except cl.Error as error:
+            raise RuntimeError(f'Ошибка компиляции OpenCL: {error}') from error
         self.kernels = {name: cl.Kernel(self.program, name) for name in
                         (('md5_batch', 'sha1_batch') if algorithm in ('md5', 'sha1') else
                          ('bcrypt_init', 'bcrypt_loop', 'bcrypt_final') if algorithm == 'bcrypt' else
@@ -203,74 +212,57 @@ class GpuHasher:
                 buf.release()
 
 
-def search_gpu(target, config, wordlist=None, batch_size=16, device_index=0, on_progress=None):
-    if not 1 <= batch_size <= 4096:
-        raise ValueError('GPU batch size must be 1..4096')
-    config.validate()
+def search_gpu(target, config, wordlist=None, on_progress=None):
+    total = config.validate(wordlist)
+    batch_size = config.workers
     started = time.perf_counter()
-    hasher = GpuHasher(target, device_index)
+    hasher = GpuHasher(target)
     if hasher.memory_per_candidate:
         safe = min(32, hasher.device.max_mem_alloc_size // hasher.memory_per_candidate,
                    hasher.device.global_mem_size // (4 * hasher.memory_per_candidate))
         if batch_size > safe:
-            raise ValueError(f'Argon2id: уменьшите --gpu-batch-size до {safe}')
-    file_handle = None
-    total = config.validate()
-    if wordlist is None:
-        candidates = (candidate.encode('utf-8') for candidate in iter_candidates(config))
-    else:
-        total = inspect_wordlist(wordlist)['lines']
-        file_handle = wordlist.open('rb')
-        candidates = (line.removesuffix(b'\n').removesuffix(b'\r') for line in file_handle)
+            raise ValueError(f'Argon2id: уменьшите --workers до {safe}')
     checked = rejected = 0
-    # A logical GPU worker is a stable slot in successive batches, not an OS thread.
-    rows = [WorkerProgress(worker + 1, None, 0, 'waiting') for worker in range(batch_size)] if on_progress else []
+    rows = [WorkerProgress(index + 1, None, 0, 'waiting') for index in range(batch_size)] if on_progress else []
+
     def publish():
         if on_progress:
             on_progress(tuple(rows))
-    try:
+
+    password = None
+    with closing(iter_candidates(config, wordlist)) as candidates:
         publish()
-        while batch := list(itertools.islice(candidates, batch_size)):
-            limit = 72 if target.algorithm == 'bcrypt' else 256
-            valid = [(index, candidate) for index, candidate in enumerate(batch) if len(candidate) <= limit]
-            rejected += len(batch) - len(valid)
-            for index, previous in enumerate(rows):
-                if index < len(batch):
-                    raw = batch[index]
-                    rows[index] = WorkerProgress(index + 1, raw.decode('utf-8', errors='backslashreplace'),
-                                                 previous.checked, 'running' if len(raw) <= limit else 'skipped')
-                else:
-                    rows[index] = WorkerProgress(index + 1, previous.candidate, previous.checked, 'done')
-            publish()
-            outputs = hasher.digest_batch([candidate for _, candidate in valid])
-            checked += len(valid)
-            matches = []
-            for (index, raw), digest in zip(valid, outputs):
-                matched = digest == hasher.expected
-                if on_progress:
-                    previous = rows[index]
-                    rows[index] = WorkerProgress(index + 1, previous.candidate, previous.checked + 1,
-                                                 'found' if matched else 'running')
-                if matched:
-                    matches.append(raw)
-            if matches:
-                rows = [WorkerProgress(row.worker, row.candidate, row.checked,
-                                       'done' if row.status == 'running' else row.status) for row in rows]
+        try:
+            while batch := list(itertools.islice(candidates, batch_size)):
+                limit = 72 if target.algorithm == 'bcrypt' else 256
+                valid = [(index, raw) for index, raw in enumerate(batch) if len(raw) <= limit]
+                rejected += len(batch) - len(valid)
+                for index, previous in enumerate(rows):
+                    if index < len(batch):
+                        raw = batch[index]
+                        rows[index] = WorkerProgress(index + 1, raw.decode('utf-8', errors='backslashreplace'),
+                                                     previous.checked, 'running' if len(raw) <= limit else 'skipped')
+                    else:
+                        rows[index] = WorkerProgress(index + 1, previous.candidate, previous.checked, 'done')
                 publish()
-                raw = matches[0]
-                return {'found': True, 'password': raw.decode('utf-8', errors='backslashreplace'),
-                        'password_hex': raw.hex(), 'elapsed_seconds': time.perf_counter() - started,
-                        'candidates_checked': checked, 'total_candidates': total, 'backend': 'gpu',
-                        'workers': batch_size, 'batch_size': batch_size, 'rejected': rejected,
-                        'gpu_kernel_seconds': hasher.kernel_seconds, 'gpu_device': hasher.device_info()}
-            publish()
+                outputs = hasher.digest_batch([raw for _, raw in valid])
+                checked += len(valid)
+                for (index, raw), digest in zip(valid, outputs):
+                    matched = digest == hasher.expected
+                    if on_progress:
+                        previous = rows[index]
+                        rows[index] = WorkerProgress(index + 1, previous.candidate, previous.checked + 1,
+                                                     'found' if matched else 'running')
+                    if matched and password is None:
+                        password = raw
+                if password is not None:
+                    break
+                publish()
+        except hasher.cl.Error as error:
+            raise RuntimeError(f'Ошибка OpenCL: {error}') from error
         rows = [WorkerProgress(row.worker, row.candidate, row.checked,
-                               'skipped' if row.status == 'skipped' else 'done') for row in rows]
+                               'done' if row.status in ('waiting', 'running') else row.status) for row in rows]
         publish()
-        return {'found': False, 'password': None, 'elapsed_seconds': time.perf_counter() - started,
-                'candidates_checked': checked, 'total_candidates': total, 'backend': 'gpu',
-                'workers': batch_size, 'batch_size': batch_size, 'rejected': rejected,
-                'gpu_kernel_seconds': hasher.kernel_seconds, 'gpu_device': hasher.device_info()}
-    finally:
-        if file_handle is not None:
-            file_handle.close()
+    return CrackResult(password is not None, password.decode('utf-8', errors='backslashreplace') if password is not None else None,
+                       time.perf_counter() - started, checked, total, config.workers, 'gpu',
+                       password.hex() if password is not None else None, rejected, hasher.kernel_seconds)

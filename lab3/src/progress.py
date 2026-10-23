@@ -11,12 +11,12 @@ from .models import CrackConfig
 
 class CliProgress:
     """Render sampled worker state on stderr, leaving stdout as machine-readable JSON."""
-    def __init__(self, config: CrackConfig, stream=None, total_candidates=None, *, backend=None, workers=None):
+    def __init__(self, config: CrackConfig, stream=None, total_candidates=None):
         self.config = config
-        self.backend = backend or config.backend
-        self.workers = config.workers if workers is None else workers
+        self.backend = 'gpu' if config.gpu else 'cpu'
+        self.workers = config.workers
         self.stream = sys.stderr if stream is None else stream
-        self.total = config.validate() if total_candidates is None else total_candidates
+        self.total = total_candidates
         self.started = time.perf_counter()
         self.last_render = 0.0
         self.previous = None

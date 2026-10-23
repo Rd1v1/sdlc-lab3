@@ -1,41 +1,35 @@
-"""Параметры поиска, результат и состояние воркера."""
-from __future__ import annotations
-
+"""Параметры, результат поиска и строка таблицы воркеров."""
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
 class CrackConfig:
-    alphabet: str
-    min_length: int
-    max_length: int
-    candidate_limit: int = 2_000_000
+    alphabet: str = '0123456789'
+    min_length: int = 1
+    max_length: int = 6
     workers: int = 1
-    backend: str = "threads"
-    prefix: str = ""
+    gpu: bool = False
 
-    def validate(self) -> int:
+    def validate(self, wordlist: Path | None = None) -> int | None:
+        maximum = 4096 if self.gpu else min(64, os.cpu_count() or 1)
+        if not 1 <= self.workers <= maximum:
+            raise ValueError(f'Число воркеров должно быть от 1 до {maximum}')
+        if wordlist is not None:
+            if not wordlist.is_file() or wordlist.stat().st_size > 256 * 1024 * 1024:
+                raise ValueError('Словарь должен быть файлом размером не более 256 МиБ')
+            return None
         if not self.alphabet or len(self.alphabet) > 128 or len(set(self.alphabet)) != len(self.alphabet):
-            raise ValueError("Алфавит должен содержать 1-128 уникальных символов")
+            raise ValueError('Алфавит: от 1 до 128 уникальных символов')
+        if any(ord(char) < 32 or ord(char) == 127 for char in self.alphabet):
+            raise ValueError('Управляющие символы в алфавите запрещены')
         if not 1 <= self.min_length <= self.max_length <= 8:
-            raise ValueError("Длины кандидатов должны находиться в диапазоне 1-8")
-        if self.candidate_limit < 1:
-            raise ValueError("Лимит кандидатов должен быть положительным")
-        if not 1 <= self.workers <= min(64, os.cpu_count() or 1):
-            raise ValueError("Число воркеров должно быть от 1 до числа логических процессоров (максимум 64)")
-        if self.backend not in ("threads", "processes"):
-            raise ValueError("Режим воркеров: threads или processes")
-        if self.backend == "processes" and os.name == "nt" and self.workers > 61:
-            raise ValueError("На Windows допускается не более 61 процесса")
-        if any(ord(character) < 32 or ord(character) == 127 for character in self.alphabet):
-            raise ValueError("Управляющие символы в алфавите запрещены")
-        if len(self.prefix) > 64 or any(ord(character) < 32 or ord(character) == 127 for character in self.prefix):
-            raise ValueError("Префикс: максимум 64 символа без управляющих символов")
-        count = sum(len(self.alphabet) ** length for length in range(self.min_length, self.max_length + 1))
-        if count > self.candidate_limit:
-            raise ValueError(f"Диапазон содержит {count:,} кандидатов, лимит: {self.candidate_limit:,}")
-        return count
+            raise ValueError('Длины должны находиться в диапазоне 1–8')
+        total = sum(len(self.alphabet) ** size for size in range(self.min_length, self.max_length + 1))
+        if total > 2_000_000:
+            raise ValueError('Учебный предел — 2 млн кандидатов')
+        return total
 
 
 @dataclass(frozen=True)
@@ -44,10 +38,12 @@ class CrackResult:
     password: str | None
     elapsed_seconds: float
     candidates_checked: int
-    total_candidates: int
+    total_candidates: int | None
     workers: int
-    backend: str = "threads"
+    backend: str
     password_hex: str | None = None
+    rejected: int = 0
+    gpu_kernel_seconds: float | None = None
 
 
 @dataclass(frozen=True)
@@ -59,6 +55,4 @@ class WorkerProgress:
 
     @property
     def found_password(self) -> str | None:
-        """Only a verified match is a found password; samples are not results."""
-        return self.candidate if self.status == "found" else None
-
+        return self.candidate if self.status == 'found' else None
