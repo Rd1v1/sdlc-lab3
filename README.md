@@ -1,6 +1,6 @@
 # LAB 3 — запуск
 
-Windows, PowerShell, Python 3.13+. Для `--gpu` нужен OpenCL-драйвер видеокарты. Docker не требуется. Команды выполняются из корня репозитория.
+Windows, PowerShell, Python 3.13+. Для `--gpu` нужен OpenCL-драйвер видеокарты. Команды выполняются из корня репозитория.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
 .venv/Scripts/python.exe main.py e10adc3949ba59abbe56e057f20f883e --wordlist .tools/wordlists/rockyou.txt --gpu --workers 16
 ```
 
-Ctrl+C останавливает поиск. `--no-progress` отключает таблицу для замеров. Параметры передаются командой, вопросов при запуске нет.
+Ctrl+C останавливает поиск. `--no-progress` отключает таблицу для замеров.
 
 ## Сравнение с hashcat
 

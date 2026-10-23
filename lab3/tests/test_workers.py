@@ -89,7 +89,7 @@ class WorkerTests(unittest.TestCase):
                 self.assertEqual(run([]), 0)
                 self.assertIn('--gpu', output.getvalue())
 
-    def test_cli_exit_codes_and_removed_options(self):
+    def test_cli_exit_codes_and_unsupported_options(self):
         target = hashlib.md5(b'c', usedforsecurity=False).hexdigest()
         args = [target, '--alphabet', 'ab', '--max-length', '1', '--no-progress']
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -98,9 +98,9 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(run(args+['--workers', '0']), 2)
             with patch('lab3.src.cli.crack', side_effect=KeyboardInterrupt):
                 self.assertEqual(run(args), 130)
-            for removed in ('--backend', '--interactive', '--prefix', '--gpu-batch-size', '--gpu-device'):
-                with self.subTest(option=removed), self.assertRaises(SystemExit) as error:
-                    run(args+[removed, '1'])
+            for option in ('--backend', '--interactive', '--prefix', '--gpu-batch-size', '--gpu-device'):
+                with self.subTest(option=option), self.assertRaises(SystemExit) as error:
+                    run(args+[option, '1'])
                 self.assertEqual(error.exception.code, 2)
 
     def test_renderer_keeps_full_match_and_escapes_candidates(self):
