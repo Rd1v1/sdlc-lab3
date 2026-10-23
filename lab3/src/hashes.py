@@ -26,8 +26,10 @@ class HashTarget:
             return cls("sha1", value.lower())
         if value.startswith(("$2a$", "$2b$", "$2y$")):
             match = re.fullmatch(r"\$2[aby]\$(\d\d)\$[./A-Za-z0-9]{53}", value)
-            if not match or not 4 <= int(match.group(1)) <= 12:
-                raise TargetError("Некорректный bcrypt-хэш или cost вне учебного предела 4-12")
+            if not match:
+                raise TargetError("Некорректный bcrypt-хэш")
+            if not 4 <= int(match.group(1)) <= 12:
+                raise TargetError("Параметр сложности bcrypt (cost) вне диапазона 4-12, поддерживаемого приложением")
             return cls("bcrypt", value)
         if value.startswith("$argon2id$"):
             match = re.fullmatch(r"\$argon2id\$v=19\$m=(\d+),t=(\d+),p=(\d+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)", value)
@@ -35,7 +37,7 @@ class HashTarget:
                 raise TargetError("Некорректный Argon2id-хэш")
             memory_kib, iterations, parallelism = map(int, match.groups()[:3])
             if not 8 <= memory_kib <= 262144 or not 1 <= iterations <= 10 or not 1 <= parallelism <= 8:
-                raise TargetError("Параметры Argon2id выходят за установленный предел")
+                raise TargetError("Параметры Argon2id выходят за диапазон, поддерживаемый приложением")
             if memory_kib < 8 * parallelism:
                 raise TargetError("Argon2id memory must be at least 8 * parallelism")
             try:

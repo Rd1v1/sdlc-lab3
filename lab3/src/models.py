@@ -28,7 +28,7 @@ class CrackConfig:
             raise ValueError('Длины должны находиться в диапазоне 1–8')
         total = sum(len(self.alphabet) ** size for size in range(self.min_length, self.max_length + 1))
         if total > 2_000_000:
-            raise ValueError('Учебный предел — 2 млн кандидатов')
+            raise ValueError('Превышен лимит приложения: не более 2 млн кандидатов')
         return total
 
 
