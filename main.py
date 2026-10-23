@@ -30,7 +30,7 @@ def main():
             print('Источник должен быть 1 или 2', file=sys.stderr)
             return 2
         if backend == 'gpu':
-            options += ['--gpu-batch-size', ask('Кандидатов в GPU-пакете', '16')]
+            options += ['--workers', ask('Число GPU-воркеров (кандидатов в пакете)', '16')]
         elif source == '1':
             options += ['--workers', ask('Число воркеров', '1')]
         return run(options)

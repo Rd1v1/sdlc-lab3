@@ -93,6 +93,18 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(result.candidates_checked, len(calls))
         self.assertLess(result.candidates_checked, 9)
 
+    def test_found_password_belongs_only_to_matching_worker(self):
+        target = HashTarget.parse(hashlib.sha1(b'bb', usedforsecurity=False).hexdigest())
+        for backend in ('threads', 'processes'):
+            with self.subTest(backend=backend):
+                snapshots = []
+                result = crack(target, CrackConfig('ab', 2, 2, workers=2, backend=backend), snapshots.append)
+                final = snapshots[-1]
+                self.assertEqual([row.worker for row in final], [1, 2])
+                self.assertEqual([row.found_password for row in final], [None, 'bb'])
+                self.assertEqual(sum(row.checked for row in final), result.candidates_checked)
+                self.assertTrue(all(row.status not in ('waiting', 'running') for row in final))
+
     def test_cancellation_cleans_spawned_processes(self):
         import bcrypt
         target = HashTarget.parse(bcrypt.hashpw(b'outside', bcrypt.gensalt(rounds=8)).decode())
@@ -130,6 +142,8 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(json.loads(process.stdout)['password'], 'ba')
         self.assertIn('WORKER', process.stderr)
         self.assertIn('CANDIDATE', process.stderr)
+        self.assertIn('FOUND PASSWORD', process.stderr)
+        self.assertIn('FOUND by worker 2: "ba"', process.stderr)
         self.assertNotIn('\x1b', process.stderr)
 
     def test_interactive_mode_and_eof(self):
@@ -172,6 +186,28 @@ class WorkerTests(unittest.TestCase):
         renderer((WorkerProgress(1, 'я', 1, 'found'),))
         self.assertIn('\x1b[', stream.getvalue())
         self.assertIn('"\\u044f"', stream.getvalue())
+        self.assertIn('FOUND by worker 1: "\\u044f"', stream.getvalue())
+
+    def test_renderer_distinguishes_sample_from_match_and_keeps_full_password(self):
+        from lab3.src.models import WorkerProgress
+        stream = io.StringIO()
+        renderer = CliProgress(CrackConfig('ab', 1, 1, workers=2), stream=stream)
+        password = 'long-password-' * 10
+        renderer((WorkerProgress(1, 'sample', 1, 'done'), WorkerProgress(2, password, 2, 'found')))
+        output = stream.getvalue()
+        self.assertIn('FOUND PASSWORD', output)
+        self.assertNotIn('FOUND by worker 1', output)
+        self.assertIn(f'FOUND by worker 2: "{password}"', output)
+
+    def test_invalid_gpu_worker_arguments_fail_before_starting_device(self):
+        target = hashlib.md5(b'a', usedforsecurity=False).hexdigest()
+        for options in (['--backend', 'gpu', '--workers', '0'],
+                        ['--backend', 'gpu', '--workers', '4097'],
+                        ['--backend', 'gpu', '--workers', '2', '--gpu-batch-size', '3'],
+                        ['--backend', 'threads', '--gpu-batch-size', '2']):
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                with patch('lab3.src.gpu.GpuHasher', side_effect=AssertionError('must validate first')):
+                    self.assertEqual(run([target, *options]), 2)
 
 
 if __name__ == '__main__':

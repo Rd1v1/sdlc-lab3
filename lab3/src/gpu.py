@@ -223,23 +223,50 @@ def search_gpu(target, config, wordlist=None, batch_size=16, device_index=0, on_
         file_handle = wordlist.open('rb')
         candidates = (line.removesuffix(b'\n').removesuffix(b'\r') for line in file_handle)
     checked = rejected = 0
+    # A logical GPU worker is a stable slot in successive batches, not an OS thread.
+    rows = [WorkerProgress(worker + 1, None, 0, 'waiting') for worker in range(batch_size)] if on_progress else []
+    def publish():
+        if on_progress:
+            on_progress(tuple(rows))
     try:
+        publish()
         while batch := list(itertools.islice(candidates, batch_size)):
             limit = 72 if target.algorithm == 'bcrypt' else 256
             valid = [(index, candidate) for index, candidate in enumerate(batch) if len(candidate) <= limit]
             rejected += len(batch) - len(valid)
-            if on_progress:
-                on_progress(tuple(WorkerProgress(index + 1, candidate.decode('utf-8', errors='backslashreplace'),
-                                                  0, 'running') for index, candidate in enumerate(batch)))
+            for index, previous in enumerate(rows):
+                if index < len(batch):
+                    raw = batch[index]
+                    rows[index] = WorkerProgress(index + 1, raw.decode('utf-8', errors='backslashreplace'),
+                                                 previous.checked, 'running' if len(raw) <= limit else 'skipped')
+                else:
+                    rows[index] = WorkerProgress(index + 1, previous.candidate, previous.checked, 'done')
+            publish()
             outputs = hasher.digest_batch([candidate for _, candidate in valid])
             checked += len(valid)
-            for (_, raw), digest in zip(valid, outputs):
-                if digest == hasher.expected:
-                    return {'found': True, 'password': raw.decode('utf-8', errors='backslashreplace'),
-                            'password_hex': raw.hex(), 'elapsed_seconds': time.perf_counter() - started,
-                            'candidates_checked': checked, 'total_candidates': total, 'backend': 'gpu',
-                            'workers': len(valid), 'batch_size': batch_size, 'rejected': rejected,
-                            'gpu_kernel_seconds': hasher.kernel_seconds, 'gpu_device': hasher.device_info()}
+            matches = []
+            for (index, raw), digest in zip(valid, outputs):
+                matched = digest == hasher.expected
+                if on_progress:
+                    previous = rows[index]
+                    rows[index] = WorkerProgress(index + 1, previous.candidate, previous.checked + 1,
+                                                 'found' if matched else 'running')
+                if matched:
+                    matches.append(raw)
+            if matches:
+                rows = [WorkerProgress(row.worker, row.candidate, row.checked,
+                                       'done' if row.status == 'running' else row.status) for row in rows]
+                publish()
+                raw = matches[0]
+                return {'found': True, 'password': raw.decode('utf-8', errors='backslashreplace'),
+                        'password_hex': raw.hex(), 'elapsed_seconds': time.perf_counter() - started,
+                        'candidates_checked': checked, 'total_candidates': total, 'backend': 'gpu',
+                        'workers': batch_size, 'batch_size': batch_size, 'rejected': rejected,
+                        'gpu_kernel_seconds': hasher.kernel_seconds, 'gpu_device': hasher.device_info()}
+            publish()
+        rows = [WorkerProgress(row.worker, row.candidate, row.checked,
+                               'skipped' if row.status == 'skipped' else 'done') for row in rows]
+        publish()
         return {'found': False, 'password': None, 'elapsed_seconds': time.perf_counter() - started,
                 'candidates_checked': checked, 'total_candidates': total, 'backend': 'gpu',
                 'workers': batch_size, 'batch_size': batch_size, 'rejected': rejected,

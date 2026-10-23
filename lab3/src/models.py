@@ -57,3 +57,8 @@ class WorkerProgress:
     checked: int
     status: str
 
+    @property
+    def found_password(self) -> str | None:
+        """Only a verified match is a found password; samples are not results."""
+        return self.candidate if self.status == "found" else None
+

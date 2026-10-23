@@ -22,9 +22,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-length", type=int, default=1)
     parser.add_argument("--max-length", type=int, default=6)
     parser.add_argument("--candidate-limit", type=int, default=2_000_000)
-    parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--workers", type=int, help="Число CPU-воркеров или кандидатов в GPU-пакете")
     parser.add_argument("--backend", choices=("threads", "processes", "gpu"), default="threads")
-    parser.add_argument("--gpu-batch-size", type=int, default=16, help="Число GPU-кандидатов в пакете")
+    parser.add_argument("--gpu-batch-size", type=int, help="GPU: синоним --workers (по умолчанию 16)")
     parser.add_argument("--gpu-device", type=int, default=0, help="Индекс GPU OpenCL, начиная с 0")
     parser.add_argument("--interactive", action="store_true", help="Запросить режим и число воркеров")
     progress = parser.add_mutually_exclusive_group()
@@ -43,28 +43,33 @@ def run(arguments: list[str] | None = None) -> int:
             print("Режим [threads]: ", end="", file=sys.stderr, flush=True)
             options.backend = input().strip() or "threads"
             if options.backend == 'gpu':
-                print("Кандидатов в GPU-пакете [16]: ", end="", file=sys.stderr, flush=True)
-                options.gpu_batch_size = int(input().strip() or "16")
+                print("Число GPU-воркеров (кандидатов в пакете) [16]: ", end="", file=sys.stderr, flush=True)
+                options.workers = int(input().strip() or "16")
             else:
                 print("Число воркеров [1]: ", end="", file=sys.stderr, flush=True)
                 options.workers = int(input().strip() or "1")
+        if options.backend == 'gpu':
+            if (options.workers is not None and options.gpu_batch_size is not None
+                    and options.workers != options.gpu_batch_size):
+                raise ValueError('--workers и --gpu-batch-size должны совпадать, если указаны вместе')
+            batch_size = options.workers if options.workers is not None else options.gpu_batch_size
+            batch_size = 16 if batch_size is None else batch_size
+            if not 1 <= batch_size <= 4096:
+                raise ValueError('Число GPU-воркеров должно быть от 1 до 4096')
+        elif options.gpu_batch_size is not None:
+            raise ValueError('--gpu-batch-size применяется только к --backend gpu')
+        cpu_workers = 1 if options.backend == 'gpu' or options.workers is None else options.workers
         config = CrackConfig(options.alphabet, options.min_length, options.max_length,
-                             options.candidate_limit, options.workers,
+                             options.candidate_limit, cpu_workers,
                              'threads' if options.backend == 'gpu' else options.backend, options.prefix)
         enabled = sys.stderr.isatty() if options.progress is None else options.progress
         if options.backend == 'gpu':
             from .gpu import search_gpu
-            if options.workers != 1:
-                raise ValueError('Для GPU используйте --gpu-batch-size; --workers относится к CPU')
             if options.wordlist and options.prefix:
                 raise ValueError('Префикс не применяется к словарю')
-            def gpu_progress(rows):
-                if enabled:
-                    print('GPU | CANDIDATES IN CURRENT BATCH', file=sys.stderr)
-                    for row in rows:
-                        print(f'GPU worker {row.worker}: {json.dumps(row.candidate, ensure_ascii=True)} [{row.status}]', file=sys.stderr)
-            result = search_gpu(target, config, options.wordlist, options.gpu_batch_size, options.gpu_device,
-                                gpu_progress if enabled else None)
+            renderer = CliProgress(config, backend='gpu', workers=batch_size,
+                                   total_candidates=0 if options.wordlist else None) if enabled else None
+            result = search_gpu(target, config, options.wordlist, batch_size, options.gpu_device, renderer)
         elif options.wordlist:
             if config.workers != 1 or config.backend != 'threads' or config.prefix:
                 raise ValueError('Словарь использует один поток без префикса: --workers 1 --backend threads')
