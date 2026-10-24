@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
 .venv/Scripts/python.exe main.py e10adc3949ba59abbe56e057f20f883e --wordlist .tools/wordlists/rockyou.txt --gpu --workers 16
 ```
 
-Ctrl+C останавливает поиск. `--no-progress` отключает таблицу для замеров.
+Таблица обновляется в отдельном экране терминала. Стрелки и PgUp/PgDn прокручивают строки и длинные значения; Ctrl+Home/Ctrl+End переходят к первому/последнему воркеру. Размер окна можно менять во время работы. Ctrl+C останавливает поиск. `--no-progress` отключает таблицу для замеров. При перенаправлении вывода таблица печатается один раз в конце поиска.
 
 ## Хэши для запуска
 

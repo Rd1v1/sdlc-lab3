@@ -9,3 +9,5 @@ platformdirs==4.12.4
 pytools==2026.1.1
 typing_extensions==4.16.0
 siphash24==1.9
+prompt_toolkit==3.0.53
+wcwidth==0.9.3

@@ -14,6 +14,26 @@ from lab3.src.cli import run
 
 @unittest.skipUnless(os.environ.get('LAB3_GPU_TESTS') == '1', 'Set LAB3_GPU_TESTS=1 to execute real GPU tests')
 class GpuTests(unittest.TestCase):
+    def test_32_workers_with_scrollable_terminal(self):
+        from prompt_toolkit.input import create_pipe_input
+        from prompt_toolkit.output import DummyOutput
+        from lab3.src.gpu import search_gpu
+        from lab3.src.progress import CliProgress
+        from lab3.src.terminal import WorkerTerminal
+        config = CrackConfig('0123456789', 3, 3, 32, True)
+        target = HashTarget.parse(hashlib.md5(b'999', usedforsecurity=False).hexdigest())
+        progress = CliProgress(config, stream=io.StringIO(), total_candidates=1000)
+        with create_pipe_input() as source:
+            terminal = WorkerTerminal(progress, lambda callback: search_gpu(target, config, on_progress=callback),
+                                      input=source, output=DummyOutput())
+            result = terminal.run()
+        self.assertEqual(result.password, '999')
+        self.assertEqual(result.candidates_checked, 1000)
+        self.assertEqual(terminal.table.document.line_count, 32)
+        self.assertEqual(progress.rows[7].found_password, '999')
+        self.assertEqual(sum(row.checked for row in progress.rows), 1000)
+        self.assertFalse(terminal.worker.is_alive())
+
     def test_all_assignment_hashes_with_control_wordlist(self):
         import json
         from lab3.src.gpu import search_gpu

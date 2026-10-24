@@ -36,10 +36,13 @@ def run(arguments=None):
         total = config.validate(options.wordlist)
         progress = None if options.no_progress else CliProgress(config, total_candidates=total)
         if options.gpu:
-            from .gpu import search_gpu
-            result = search_gpu(target, config, options.wordlist, on_progress=progress)
+            from .gpu import search_gpu as search
         else:
-            result = crack(target, config, options.wordlist, on_progress=progress)
+            search = crack
+        if progress is None:
+            result = search(target, config, options.wordlist)
+        else:
+            result = progress.run(lambda callback: search(target, config, options.wordlist, on_progress=callback))
         print(json.dumps({'algorithm': target.algorithm, **asdict(result)}, ensure_ascii=False, indent=2))
         return 0 if result.found else 1
     except (KeyboardInterrupt, EOFError):

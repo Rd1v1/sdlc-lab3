@@ -106,11 +106,13 @@ class WorkerTests(unittest.TestCase):
     def test_renderer_keeps_full_match_and_escapes_candidates(self):
         stream = io.StringIO()
         renderer = CliProgress(CrackConfig('ab', 1, 1, 2), stream=stream)
-        renderer.ansi = True
         password = 'пароль'*20
         renderer((WorkerProgress(1, None, 0, 'waiting'), WorkerProgress(2, None, 0, 'waiting')))
         renderer((WorkerProgress(1, '\x1b[31m', 1, 'done'), WorkerProgress(2, password, 1, 'found')))
+        self.assertEqual(stream.getvalue(), '')
+        renderer.print_result()
         output = stream.getvalue()
-        self.assertIn('\x1b[', output)
+        self.assertNotIn('\x1b', output)
+        self.assertIn('\\u001b[31m', output)
         self.assertIn('FOUND by worker 2: '+json.dumps(password, ensure_ascii=True), output)
         self.assertNotIn('FOUND by worker 1', output)
